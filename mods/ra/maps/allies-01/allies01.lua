@@ -1,5 +1,5 @@
 --[[
-   Copyright 2007-2017 The OpenRA Developers (see AUTHORS)
+   Copyright 2007-2018 The OpenRA Developers (see AUTHORS)
    This file is part of OpenRA, which is free software. It is made
    available to you under the terms of the GNU General Public License
    as published by the Free Software Foundation, either version 3 of
@@ -37,7 +37,6 @@ RunInitialActivities = function()
 	Patrol2.Hunt()
 	Patrol3.Hunt()
 	Patrol4.Hunt()
-	Harvester.FindResources()
 	Civilian1.Wait(DateTime.Seconds(6))
 	Civilian2.Wait(DateTime.Seconds(6))
 	Civilian1.Hunt()

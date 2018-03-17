@@ -1,6 +1,6 @@
 #region Copyright & License Information
 /*
- * Copyright 2007-2017 The OpenRA Developers (see AUTHORS)
+ * Copyright 2007-2018 The OpenRA Developers (see AUTHORS)
  * This file is part of OpenRA, which is free software. It is made
  * available to you under the terms of the GNU General Public License
  * as published by the Free Software Foundation, either version 3 of
@@ -45,7 +45,7 @@ namespace OpenRA.Mods.Cnc.Activities
 				ini.Infiltrating(self);
 
 			foreach (var t in target.TraitsImplementing<INotifyInfiltrated>())
-				t.Infiltrated(target, self);
+				t.Infiltrated(target, self, infiltrates.Info.Types);
 
 			var exp = self.Owner.PlayerActor.TraitOrDefault<PlayerExperience>();
 			if (exp != null)

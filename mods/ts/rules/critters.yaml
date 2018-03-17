@@ -3,10 +3,12 @@ DOGGIE:
 	Inherits@2: ^RegularInfantryDeath
 	Inherits@3: ^HealsOnTiberium
 	Inherits@AUTOTARGET: ^AutoTargetGroundAssaultMove
+	EditorTilesetFilter:
+		Categories: Critter
 	Tooltip:
 		Name: Tiberian Fiend
 	Health:
-		HP: 250
+		HP: 25000
 	Selectable:
 		Bounds: 24,24
 	Valued:
@@ -37,19 +39,44 @@ DOGGIE:
 	HitShape:
 		Type: Circle
 			Radius: 213
+	GrantConditionOnTerrain:
+		Condition: hidingplace
+		TerrainTypes: Tiberium, BlueTiberium
+	GrantConditionOnMovement:
+		Condition: moving
+	GrantConditionOnAttack:
+		ArmamentNames: primary
+		Condition: attacking
+	RenderSprites:
+		Palette: greentiberium
+	WithSpriteBody:
+		RequiresCondition: hidingplace && !moving && !attacking
+		StartSequence: laydown
+		Sequence: hide
+	WithInfantryBody:
+		RequiresCondition: !hidingplace || moving || attacking
 
 VISC_SML:
 	Inherits: ^Visceroid
 	Tooltip:
 		Name: Baby Visceroid
 	Health:
-		HP: 200
+		HP: 20000
 	AttackWander:
 		WanderMoveRadius: 2
 		MinMoveDelay: 30
 		MaxMoveDelay: 60
 	RenderSprites:
 		Image: vissml
+	Mobile:
+		Crushes: visceroid-fusing
+	Crushable:
+		CrushClasses: visceroid-fusing
+		WarnProbability: 0
+		CrushedByFriendlies: True
+	TransformCrusherOnCrush:
+		IntoActor: visc_lrg
+		CrushClasses: visceroid-fusing
 
 VISC_LRG:
 	Inherits: ^Visceroid
@@ -58,7 +85,7 @@ VISC_LRG:
 	Tooltip:
 		Name: Adult Visceroid
 	Health:
-		HP: 500
+		HP: 50000
 	Armor:
 		Type: Heavy
 	RevealsShroud:
@@ -88,7 +115,7 @@ JFISH:
 	Tooltip:
 		Name: Tiberium Floater
 	Health:
-		HP: 500
+		HP: 50000
 	RevealsShroud:
 		Range: 5c0
 	Mobile:

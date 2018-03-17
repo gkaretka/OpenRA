@@ -1,6 +1,6 @@
 #region Copyright & License Information
 /*
- * Copyright 2007-2017 The OpenRA Developers (see AUTHORS)
+ * Copyright 2007-2018 The OpenRA Developers (see AUTHORS)
  * This file is part of OpenRA, which is free software. It is made
  * available to you under the terms of the GNU General Public License
  * as published by the Free Software Foundation, either version 3 of
@@ -33,17 +33,23 @@ namespace OpenRA.Mods.Common.Effects
 			this.rp = rp;
 			this.exits = exits;
 
-			flag = new Animation(building.World, rp.Info.Image);
-			flag.PlayRepeating(rp.Info.FlagSequence);
+			if (rp.Info.Image != null)
+			{
+				flag = new Animation(building.World, rp.Info.Image);
+				flag.PlayRepeating(rp.Info.FlagSequence);
 
-			circles = new Animation(building.World, rp.Info.Image);
-			circles.Play(rp.Info.CirclesSequence);
+				circles = new Animation(building.World, rp.Info.Image);
+				circles.Play(rp.Info.CirclesSequence);
+			}
 		}
 
 		void IEffect.Tick(World world)
 		{
-			flag.Tick();
-			circles.Tick();
+			if (flag != null)
+				flag.Tick();
+
+			if (circles != null)
+				circles.Tick();
 
 			if (cachedLocation != rp.Location)
 			{
@@ -68,7 +74,8 @@ namespace OpenRA.Mods.Common.Effects
 				targetLine[0] = exitPos;
 				targetLine[1] = rallyPos;
 
-				circles.Play(rp.Info.CirclesSequence);
+				if (circles != null)
+					circles.Play(rp.Info.CirclesSequence);
 			}
 
 			if (!building.IsInWorld || building.IsDead)
@@ -95,11 +102,13 @@ namespace OpenRA.Mods.Common.Effects
 			if (Game.Settings.Game.DrawTargetLine)
 				yield return new TargetLineRenderable(targetLine, building.Owner.Color.RGB);
 
-			foreach (var r in circles.Render(targetLine[1], palette))
-				yield return r;
+			if (circles != null)
+				foreach (var r in circles.Render(targetLine[1], palette))
+					yield return r;
 
-			foreach (var r in flag.Render(targetLine[1], palette))
-				yield return r;
+			if (flag != null)
+				foreach (var r in flag.Render(targetLine[1], palette))
+					yield return r;
 		}
 	}
 }

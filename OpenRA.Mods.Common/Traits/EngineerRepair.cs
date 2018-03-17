@@ -1,6 +1,6 @@
 #region Copyright & License Information
 /*
- * Copyright 2007-2017 The OpenRA Developers (see AUTHORS)
+ * Copyright 2007-2018 The OpenRA Developers (see AUTHORS)
  * This file is part of OpenRA, which is free software. It is made
  * available to you under the terms of the GNU General Public License
  * as published by the Free Software Foundation, either version 3 of
@@ -51,33 +51,18 @@ namespace OpenRA.Mods.Common.Traits
 			if (order.OrderID != "EngineerRepair")
 				return null;
 
-			if (target.Type == TargetType.FrozenActor)
-				return new Order(order.OrderID, self, queued) { ExtraData = target.FrozenActor.ID };
-
-			return new Order(order.OrderID, self, queued) { TargetActor = target.Actor };
+			return new Order(order.OrderID, self, target, queued);
 		}
 
 		static bool IsValidOrder(Actor self, Order order)
 		{
-			// Not targeting a frozen actor
-			if (order.ExtraData == 0 && order.TargetActor == null)
-				return false;
+			if (order.Target.Type == TargetType.FrozenActor)
+				return order.Target.FrozenActor.DamageState > DamageState.Undamaged;
 
-			if (order.ExtraData != 0)
-			{
-				// Targeted an actor under the fog
-				var frozenLayer = self.Owner.PlayerActor.TraitOrDefault<FrozenActorLayer>();
-				if (frozenLayer == null)
-					return false;
+			if (order.Target.Type == TargetType.Actor)
+				return order.TargetActor.GetDamageState() > DamageState.Undamaged;
 
-				var frozen = frozenLayer.FromID(order.ExtraData);
-				if (frozen == null)
-					return false;
-
-				return frozen.DamageState > DamageState.Undamaged;
-			}
-
-			return order.TargetActor.GetDamageState() > DamageState.Undamaged;
+			return false;
 		}
 
 		public string VoicePhraseForOrder(Actor self, Order order)

@@ -1,6 +1,6 @@
 #region Copyright & License Information
 /*
- * Copyright 2007-2017 The OpenRA Developers (see AUTHORS)
+ * Copyright 2007-2018 The OpenRA Developers (see AUTHORS)
  * This file is part of OpenRA, which is free software. It is made
  * available to you under the terms of the GNU General Public License
  * as published by the Free Software Foundation, either version 3 of
@@ -41,11 +41,17 @@ namespace OpenRA.Mods.Common.Traits
 		public GrantConditionOnPrerequisite(Actor self, GrantConditionOnPrerequisiteInfo info)
 		{
 			this.info = info;
-			globalManager = self.Owner.PlayerActor.Trait<GrantConditionOnPrerequisiteManager>();
 		}
 
 		void INotifyCreated.Created(Actor self)
 		{
+			// Special case handling is required for the Player actor.
+			// Created is called before Player.PlayerActor is assigned,
+			// so we must query other player traits from self, knowing that
+			// it refers to the same actor as self.Owner.PlayerActor
+			var playerActor = self.Info.Name == "player" ? self : self.Owner.PlayerActor;
+
+			globalManager = playerActor.Trait<GrantConditionOnPrerequisiteManager>();
 			conditionManager = self.TraitOrDefault<ConditionManager>();
 		}
 

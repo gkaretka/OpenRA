@@ -1,6 +1,6 @@
 #region Copyright & License Information
 /*
- * Copyright 2007-2017 The OpenRA Developers (see AUTHORS)
+ * Copyright 2007-2018 The OpenRA Developers (see AUTHORS)
  * This file is part of OpenRA, which is free software. It is made
  * available to you under the terms of the GNU General Public License
  * as published by the Free Software Foundation, either version 3 of
@@ -15,6 +15,7 @@ using System.Linq;
 using Eluant;
 using OpenRA.Mods.Common.Activities;
 using OpenRA.Mods.Common.Traits;
+using OpenRA.Primitives;
 using OpenRA.Scripting;
 using OpenRA.Traits;
 
@@ -32,14 +33,22 @@ namespace OpenRA.Mods.Common.Scripting
 		}
 
 		[ScriptActorPropertyActivity]
-		[Desc("Build a unit, ignoring the production queue. The activity will wait if the exit is blocked.")]
-		public void Produce(string actorType, string factionVariant = null)
+		[Desc("Build a unit, ignoring the production queue. The activity will wait if the exit is blocked.",
+			"If productionType is nil or unavailable, then an exit will be selected based on Buildable info.")]
+		public void Produce(string actorType, string factionVariant = null, string productionType = null)
 		{
 			ActorInfo actorInfo;
 			if (!Self.World.Map.Rules.Actors.TryGetValue(actorType, out actorInfo))
 				throw new LuaException("Unknown actor type '{0}'".F(actorType));
 
-			Self.QueueActivity(new WaitFor(() => p.Produce(Self, actorInfo, factionVariant)));
+			var faction = factionVariant ?? BuildableInfo.GetInitialFaction(actorInfo, p.Faction);
+			var inits = new TypeDictionary
+			{
+				new OwnerInit(Self.Owner),
+				new FactionInit(faction)
+			};
+
+			Self.QueueActivity(new WaitFor(() => p.Produce(Self, actorInfo, productionType, inits)));
 		}
 	}
 

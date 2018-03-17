@@ -1,6 +1,6 @@
 #region Copyright & License Information
 /*
- * Copyright 2007-2017 The OpenRA Developers (see AUTHORS)
+ * Copyright 2007-2018 The OpenRA Developers (see AUTHORS)
  * This file is part of OpenRA, which is free software. It is made
  * available to you under the terms of the GNU General Public License
  * as published by the Free Software Foundation, either version 3 of
@@ -28,7 +28,11 @@ namespace OpenRA.Mods.Common.Projectiles
 		[Desc("Sequence to play when launched. Skipped if null or empty.")]
 		[SequenceReference("Image")] public readonly string OpenSequence = null;
 
+		[Desc("The palette used to draw this projectile.")]
 		[PaletteReference] public readonly string Palette = "effect";
+
+		[Desc("Palette is a player palette BaseName")]
+		public readonly bool IsPlayerPalette = false;
 
 		public readonly bool Shadow = false;
 
@@ -104,7 +108,7 @@ namespace OpenRA.Mods.Common.Projectiles
 						yield return r;
 				}
 
-				var palette = wr.Palette(info.Palette);
+				var palette = wr.Palette(info.Palette + (info.IsPlayerPalette ? args.SourceActor.Owner.InternalName : ""));
 				foreach (var r in anim.Render(pos, palette))
 					yield return r;
 			}

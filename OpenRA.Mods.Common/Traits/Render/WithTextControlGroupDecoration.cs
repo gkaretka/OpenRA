@@ -1,6 +1,6 @@
 #region Copyright & License Information
 /*
- * Copyright 2007-2017 The OpenRA Developers (see AUTHORS)
+ * Copyright 2007-2018 The OpenRA Developers (see AUTHORS)
  * This file is part of OpenRA, which is free software. It is made
  * available to you under the terms of the GNU General Public License
  * as published by the Free Software Foundation, either version 3 of
@@ -11,6 +11,7 @@
 
 using System.Collections.Generic;
 using System.Drawing;
+using System.Linq;
 using OpenRA.Graphics;
 using OpenRA.Mods.Common.Graphics;
 using OpenRA.Traits;
@@ -18,7 +19,7 @@ using OpenRA.Traits;
 namespace OpenRA.Mods.Common.Traits.Render
 {
 	[Desc("Renders Ctrl groups using typeface.")]
-	public class WithTextControlGroupDecorationInfo : ITraitInfo, IRulesetLoaded
+	public class WithTextControlGroupDecorationInfo : ITraitInfo, IRulesetLoaded, Requires<IDecorationBoundsInfo>
 	{
 		public readonly string Font = "TinyBold";
 
@@ -47,9 +48,10 @@ namespace OpenRA.Mods.Common.Traits.Render
 		public object Create(ActorInitializer init) { return new WithTextControlGroupDecoration(init.Self, this); }
 	}
 
-	public class WithTextControlGroupDecoration : IRenderAboveShroudWhenSelected, INotifyCapture
+	public class WithTextControlGroupDecoration : IRenderAboveShroudWhenSelected, INotifyOwnerChanged
 	{
 		readonly WithTextControlGroupDecorationInfo info;
+		readonly IDecorationBounds[] decorationBounds;
 		readonly SpriteFont font;
 
 		Color color;
@@ -61,6 +63,7 @@ namespace OpenRA.Mods.Common.Traits.Render
 			if (!Game.Renderer.Fonts.TryGetValue(info.Font, out font))
 				throw new YamlException("Font '{0}' is not listed in the mod.yaml's Fonts section".F(info.Font));
 
+			decorationBounds = self.TraitsImplementing<IDecorationBounds>().ToArray();
 			color = info.UsePlayerColor ? self.Owner.Color.RGB : info.Color;
 		}
 
@@ -76,13 +79,15 @@ namespace OpenRA.Mods.Common.Traits.Render
 				yield return r;
 		}
 
+		bool IRenderAboveShroudWhenSelected.SpatiallyPartitionable { get { return true; } }
+
 		IEnumerable<IRenderable> DrawControlGroup(Actor self, WorldRenderer wr)
 		{
 			var group = self.World.Selection.GetControlGroupForActor(self);
 			if (group == null)
 				yield break;
 
-			var bounds = self.VisualBounds;
+			var bounds = decorationBounds.Select(b => b.DecorationBounds(self, wr)).FirstOrDefault(b => !b.IsEmpty);
 			var number = group.Value.ToString();
 			var halfSize = font.Measure(number) / 2;
 
@@ -110,12 +115,12 @@ namespace OpenRA.Mods.Common.Traits.Render
 				sizeOffset -= new int2(halfSize.X, 0);
 			}
 
-			var screenPos = wr.ScreenPxPosition(self.CenterPosition) + boundsOffset + sizeOffset + info.ScreenOffset;
+			var screenPos = boundsOffset + sizeOffset + info.ScreenOffset;
 
 			yield return new TextRenderable(font, wr.ProjectedPosition(screenPos), info.ZOffset, color, number);
 		}
 
-		void INotifyCapture.OnCapture(Actor self, Actor captor, Player oldOwner, Player newOwner)
+		void INotifyOwnerChanged.OnOwnerChanged(Actor self, Player oldOwner, Player newOwner)
 		{
 			if (info.UsePlayerColor)
 				color = newOwner.Color.RGB;

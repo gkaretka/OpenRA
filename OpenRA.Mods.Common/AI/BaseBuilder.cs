@@ -1,6 +1,6 @@
 #region Copyright & License Information
 /*
- * Copyright 2007-2017 The OpenRA Developers (see AUTHORS)
+ * Copyright 2007-2018 The OpenRA Developers (see AUTHORS)
  * This file is part of OpenRA, which is free software. It is made
  * available to you under the terms of the GNU General Public License
  * as published by the Free Software Foundation, either version 3 of
@@ -35,6 +35,7 @@ namespace OpenRA.Mods.Common.AI
 		int checkForBasesTicks;
 		int cachedBases;
 		int cachedBuildings;
+		int minimumExcessPower;
 
 		enum Water
 		{
@@ -54,6 +55,7 @@ namespace OpenRA.Mods.Common.AI
 			playerResources = pr;
 			this.category = category;
 			failRetryTicks = ai.Info.StructureProductionResumeDelay;
+			minimumExcessPower = ai.Info.MinimumExcessPower;
 		}
 
 		public void Tick()
@@ -75,7 +77,7 @@ namespace OpenRA.Mods.Common.AI
 
 			if (waterState == Water.NotChecked)
 			{
-				if (ai.EnoughWaterToBuildNaval())
+				if (ai.IsAreaAvailable<BaseProvider>(ai.Info.MaxBaseRadius, ai.Info.WaterTerrainTypes))
 					waterState = Water.EnoughWater;
 				else
 				{
@@ -100,6 +102,8 @@ namespace OpenRA.Mods.Common.AI
 				return;
 
 			playerBuildings = world.ActorsHavingTrait<Building>().Where(a => a.Owner == player).ToArray();
+			var excessPowerBonus = ai.Info.ExcessPowerIncrement * (playerBuildings.Count() / ai.Info.ExcessPowerIncreaseThreshold.Clamp(1, int.MaxValue));
+			minimumExcessPower = (ai.Info.MinimumExcessPower + excessPowerBonus).Clamp(ai.Info.MinimumExcessPower, ai.Info.MaximumExcessPower);
 
 			var active = false;
 			foreach (var queue in ai.FindQueues(category))
@@ -157,11 +161,13 @@ namespace OpenRA.Mods.Common.AI
 				else
 				{
 					failCount = 0;
-					ai.QueueOrder(new Order("PlaceBuilding", player.PlayerActor, false)
+					ai.QueueOrder(new Order("PlaceBuilding", player.PlayerActor, Target.FromCell(world, location.Value), false)
 					{
-						TargetLocation = location.Value,
+						// Building to place
 						TargetString = currentBuilding.Item,
-						TargetActor = queue.Actor,
+
+						// Actor ID to associate the placement with
+						ExtraData = queue.Actor.ActorID,
 						SuppressVisualFeedback = true
 					});
 
@@ -195,7 +201,7 @@ namespace OpenRA.Mods.Common.AI
 		bool HasSufficientPowerForActor(ActorInfo actorInfo)
 		{
 			return (actorInfo.TraitInfos<PowerInfo>().Where(i => i.EnabledByDefault)
-				.Sum(p => p.Amount) + playerPower.ExcessPower) >= ai.Info.MinimumExcessPower;
+				.Sum(p => p.Amount) + playerPower.ExcessPower) >= minimumExcessPower;
 		}
 
 		ActorInfo ChooseBuildingToBuild(ProductionQueue queue)
@@ -207,7 +213,7 @@ namespace OpenRA.Mods.Common.AI
 				a => a.TraitInfos<PowerInfo>().Where(i => i.EnabledByDefault).Sum(p => p.Amount));
 
 			// First priority is to get out of a low power situation
-			if (playerPower.ExcessPower < ai.Info.MinimumExcessPower)
+			if (playerPower.ExcessPower < minimumExcessPower)
 			{
 				if (power != null && power.TraitInfos<PowerInfo>().Where(i => i.EnabledByDefault).Sum(p => p.Amount) > 0)
 				{
@@ -253,7 +259,7 @@ namespace OpenRA.Mods.Common.AI
 			// Only consider building this if there is enough water inside the base perimeter and there are close enough adjacent buildings
 			if (waterState == Water.EnoughWater && ai.Info.NewProductionCashThreshold > 0
 				&& playerResources.Resources > ai.Info.NewProductionCashThreshold
-				&& ai.CloseEnoughToWater())
+				&& ai.IsAreaAvailable<GivesBuildableArea>(ai.Info.CheckForWaterRadius, ai.Info.WaterTerrainTypes))
 			{
 				var navalproduction = GetProducibleBuilding(ai.Info.BuildingCommonNames.NavalProduction, buildableThings);
 				if (navalproduction != null && HasSufficientPowerForActor(navalproduction))
@@ -307,12 +313,12 @@ namespace OpenRA.Mods.Common.AI
 				// and any structure providing buildable area close enough to that water.
 				// TODO: Extend this check to cover any naval structure, not just production.
 				if (ai.Info.BuildingCommonNames.NavalProduction.Contains(name)
-					&& (waterState == Water.NotEnoughWater || !ai.CloseEnoughToWater()))
+					&& (waterState == Water.NotEnoughWater || !ai.IsAreaAvailable<GivesBuildableArea>(ai.Info.CheckForWaterRadius, ai.Info.WaterTerrainTypes)))
 					continue;
 
 				// Will this put us into low power?
 				var actor = world.Map.Rules.Actors[name];
-				if (playerPower.ExcessPower < ai.Info.MinimumExcessPower || !HasSufficientPowerForActor(actor))
+				if (playerPower.ExcessPower < minimumExcessPower || !HasSufficientPowerForActor(actor))
 				{
 					// Try building a power plant instead
 					if (power != null && power.TraitInfos<PowerInfo>().Where(i => i.EnabledByDefault).Sum(pi => pi.Amount) > 0)

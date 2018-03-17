@@ -1,6 +1,6 @@
 #region Copyright & License Information
 /*
- * Copyright 2007-2017 The OpenRA Developers (see AUTHORS)
+ * Copyright 2007-2018 The OpenRA Developers (see AUTHORS)
  * This file is part of OpenRA, which is free software. It is made
  * available to you under the terms of the GNU General Public License
  * as published by the Free Software Foundation, either version 3 of
@@ -28,15 +28,8 @@ namespace OpenRA.Mods.Common.Warheads
 		[Desc("Ranges at which each Falloff step is defined. Overrides Spread.")]
 		public WDist[] Range = null;
 
-		[Desc("Extra search radius beyond maximum spread. If set to a negative value (default), it will automatically scale to the largest health shape.",
-			"Custom overrides should not be necessary under normal circumstances.")]
-		public WDist VictimScanRadius = new WDist(-1);
-
 		void IRulesetLoaded<WeaponInfo>.RulesetLoaded(Ruleset rules, WeaponInfo info)
 		{
-			if (VictimScanRadius < WDist.Zero)
-				VictimScanRadius = Util.MinimumRequiredVictimScanRadius(rules);
-
 			if (Range != null)
 			{
 				if (Range.Length != 1 && Range.Length != Falloff.Length)
@@ -58,9 +51,7 @@ namespace OpenRA.Mods.Common.Warheads
 			if (debugVis != null && debugVis.CombatGeometry)
 				world.WorldActor.Trait<WarheadDebugOverlay>().AddImpact(pos, Range, DebugOverlayColor);
 
-			// This only finds actors where the center is within the search radius,
-			// so we need to search beyond the maximum spread to account for actors with large health radius
-			var hitActors = world.FindActorsInCircle(pos, Range[Range.Length - 1] + VictimScanRadius);
+			var hitActors = world.FindActorsOnCircle(pos, Range[Range.Length - 1]);
 
 			foreach (var victim in hitActors)
 			{

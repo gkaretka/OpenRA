@@ -1,6 +1,6 @@
 #region Copyright & License Information
 /*
- * Copyright 2007-2017 The OpenRA Developers (see AUTHORS)
+ * Copyright 2007-2018 The OpenRA Developers (see AUTHORS)
  * This file is part of OpenRA, which is free software. It is made
  * available to you under the terms of the GNU General Public License
  * as published by the Free Software Foundation, either version 3 of
@@ -15,7 +15,7 @@ using System.Linq;
 
 namespace OpenRA.Traits
 {
-	public enum TargetType { Invalid, Actor, Terrain, FrozenActor }
+	public enum TargetType : byte { Invalid, Actor, Terrain, FrozenActor }
 	public struct Target
 	{
 		public static readonly Target[] None = { };
@@ -25,14 +25,26 @@ namespace OpenRA.Traits
 		Actor actor;
 		FrozenActor frozen;
 		WPos pos;
+		CPos? cell;
+		SubCell? subCell;
 		int generation;
 
 		public static Target FromPos(WPos p) { return new Target { pos = p, type = TargetType.Terrain }; }
 		public static Target FromCell(World w, CPos c, SubCell subCell = SubCell.FullCell)
 		{
-			return new Target { pos = w.Map.CenterOfSubCell(c, subCell), type = TargetType.Terrain };
+			return new Target
+			{
+				pos = w.Map.CenterOfSubCell(c, subCell),
+				cell = c,
+				subCell = subCell,
+				type = TargetType.Terrain
+			};
 		}
 
+		/// <summary>
+		/// DEPRECATED: Use Order.Target instead.
+		/// This method is kept to maintain compatibility with legacy code that may not understand TargetType.FrozenActor.
+		/// </summary>
 		public static Target FromOrder(World w, Order o)
 		{
 			return o.TargetActor != null
@@ -191,5 +203,12 @@ namespace OpenRA.Traits
 					return "Invalid";
 			}
 		}
+
+		// Expose internal state for serialization by the orders code *only*
+		internal TargetType SerializableType { get { return type; } }
+		internal Actor SerializableActor { get { return actor; } }
+		internal CPos? SerializableCell { get { return cell; } }
+		internal SubCell? SerializableSubCell { get { return subCell; } }
+		internal WPos SerializablePos { get { return pos; } }
 	}
 }

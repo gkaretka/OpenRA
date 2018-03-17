@@ -1,6 +1,6 @@
 #region Copyright & License Information
 /*
- * Copyright 2007-2017 The OpenRA Developers (see AUTHORS)
+ * Copyright 2007-2018 The OpenRA Developers (see AUTHORS)
  * This file is part of OpenRA, which is free software. It is made
  * available to you under the terms of the GNU General Public License
  * as published by the Free Software Foundation, either version 3 of
@@ -203,29 +203,29 @@ namespace OpenRA.Widgets
 				for (var i = 0; i < lines.Count; i++)
 				{
 					var line = lines[i];
-					var m = font.Measure(line);
-
-					if (m.X <= width)
+					if (font.Measure(line).X <= width)
 						continue;
 
-					var bestSpaceIndex = -1;
-					var start = line.Length - 1;
-
-					while (m.X > width)
+					// Scan forwards until we find the last word that fits
+					// This guarantees a small bound on the amount of string we need to search before a linebreak
+					var start = 0;
+					while (true)
 					{
-						var spaceIndex = line.LastIndexOf(' ', start);
+						var spaceIndex = line.IndexOf(' ', start);
 						if (spaceIndex == -1)
 							break;
-						bestSpaceIndex = spaceIndex;
 
-						start = spaceIndex - 1;
-						m = font.Measure(line.Substring(0, spaceIndex));
+						var fragmentWidth = font.Measure(line.Substring(0, spaceIndex)).X;
+						if (fragmentWidth > width)
+							break;
+
+						start = spaceIndex + 1;
 					}
 
-					if (bestSpaceIndex != -1)
+					if (start > 0)
 					{
-						lines[i] = line.Substring(0, bestSpaceIndex);
-						lines.Insert(i + 1, line.Substring(bestSpaceIndex + 1));
+						lines[i] = line.Substring(0, start - 1);
+						lines.Insert(i + 1, line.Substring(start));
 					}
 				}
 

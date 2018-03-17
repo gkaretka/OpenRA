@@ -1,6 +1,6 @@
 #region Copyright & License Information
 /*
- * Copyright 2007-2017 The OpenRA Developers (see AUTHORS)
+ * Copyright 2007-2018 The OpenRA Developers (see AUTHORS)
  * This file is part of OpenRA, which is free software. It is made
  * available to you under the terms of the GNU General Public License
  * as published by the Free Software Foundation, either version 3 of
@@ -57,16 +57,13 @@ namespace OpenRA.Mods.Common.Widgets
 			PreviewOffset = int2.Zero;
 			IdealPreviewSize = int2.Zero;
 
-			var r = preview
-				.SelectMany(p => p.Render(worldRenderer, WPos.Zero))
-				.OrderBy(WorldRenderer.RenderableScreenZPositionComparisonKey)
-				.Select(rr => rr.PrepareRender(worldRenderer));
+			var r = preview.SelectMany(p => p.ScreenBounds(worldRenderer, WPos.Zero));
 
 			if (r.Any())
 			{
-				var b = r.First().ScreenBounds(worldRenderer);
+				var b = r.First();
 				foreach (var rr in r.Skip(1))
-					b = Rectangle.Union(b, rr.ScreenBounds(worldRenderer));
+					b = Rectangle.Union(b, rr);
 
 				IdealPreviewSize = new int2(b.Width, b.Height);
 				PreviewOffset = -new int2(b.Left, b.Top) - IdealPreviewSize / 2;

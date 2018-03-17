@@ -1,6 +1,6 @@
 #region Copyright & License Information
 /*
- * Copyright 2007-2017 The OpenRA Developers (see AUTHORS)
+ * Copyright 2007-2018 The OpenRA Developers (see AUTHORS)
  * This file is part of OpenRA, which is free software. It is made
  * available to you under the terms of the GNU General Public License
  * as published by the Free Software Foundation, either version 3 of
@@ -79,6 +79,18 @@ namespace OpenRA.Mods.Common.Scripting
 		public void Flash(int duration = 4, Player asPlayer = null)
 		{
 			Self.World.Add(new FlashTarget(Self, asPlayer, duration));
+		}
+
+		[Desc("The effective owner of the actor.")]
+		public Player EffectiveOwner
+		{
+			get
+			{
+				if (Self.EffectiveOwner == null || Self.EffectiveOwner.Owner == null)
+					return Self.Owner;
+
+				return Self.EffectiveOwner.Owner;
+			}
 		}
 	}
 
@@ -169,6 +181,7 @@ namespace OpenRA.Mods.Common.Scripting
 				if (!Enum<UnitStance>.TryParse(value, true, out stance))
 					throw new LuaException("Unknown stance type '{0}'".F(value));
 
+				autotarget.PredictedStance = stance;
 				autotarget.SetStance(Self, stance);
 			}
 		}

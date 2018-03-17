@@ -1,6 +1,6 @@
 #region Copyright & License Information
 /*
- * Copyright 2007-2017 The OpenRA Developers (see AUTHORS)
+ * Copyright 2007-2018 The OpenRA Developers (see AUTHORS)
  * This file is part of OpenRA, which is free software. It is made
  * available to you under the terms of the GNU General Public License
  * as published by the Free Software Foundation, either version 3 of
@@ -40,7 +40,7 @@ namespace OpenRA
 		ISoundLoader[] loaders;
 		IReadOnlyFileSystem fileSystem;
 		Cache<string, ISoundSource> sounds;
-		ISoundSource rawSource;
+		ISoundSource videoSource;
 		ISound music;
 		ISound video;
 		MusicInfo currentMusic;
@@ -149,8 +149,9 @@ namespace OpenRA
 
 		public void PlayVideo(byte[] raw, int channels, int sampleBits, int sampleRate)
 		{
-			rawSource = soundEngine.AddSoundSourceFromMemory(raw, channels, sampleBits, sampleRate);
-			video = soundEngine.Play2D(rawSource, false, true, WPos.Zero, InternalSoundVolume, false);
+			StopVideo();
+			videoSource = soundEngine.AddSoundSourceFromMemory(raw, channels, sampleBits, sampleRate);
+			video = soundEngine.Play2D(videoSource, false, true, WPos.Zero, InternalSoundVolume, false);
 		}
 
 		public void PlayVideo()
@@ -168,7 +169,12 @@ namespace OpenRA
 		public void StopVideo()
 		{
 			if (video != null)
+			{
 				soundEngine.StopSound(video);
+				videoSource.Dispose();
+				videoSource = null;
+				video = null;
+			}
 		}
 
 		public void Tick()

@@ -1,6 +1,6 @@
 #region Copyright & License Information
 /*
- * Copyright 2007-2017 The OpenRA Developers (see AUTHORS)
+ * Copyright 2007-2018 The OpenRA Developers (see AUTHORS)
  * This file is part of OpenRA, which is free software. It is made
  * available to you under the terms of the GNU General Public License
  * as published by the Free Software Foundation, either version 3 of
@@ -28,7 +28,14 @@ namespace OpenRA
 	public enum MapStatus { Available, Unavailable, Searching, DownloadAvailable, Downloading, DownloadError }
 
 	// Used for grouping maps in the UI
-	public enum MapClassification { Unknown, System, User, Remote }
+	[Flags]
+	public enum MapClassification
+	{
+		Unknown = 0,
+		System = 1,
+		User = 2,
+		Remote = 4
+	}
 
 	// Used for verifying map availability in the lobby
 	public enum MapRuleStatus { Unknown, Cached, Invalid }
@@ -420,7 +427,7 @@ namespace OpenRA
 
 		public void Install(string mapRepositoryUrl, Action onSuccess)
 		{
-			if (Status != MapStatus.DownloadAvailable || !Game.Settings.Game.AllowDownloading)
+			if ((Status != MapStatus.DownloadError && Status != MapStatus.DownloadAvailable) || !Game.Settings.Game.AllowDownloading)
 				return;
 
 			innerData.Status = MapStatus.Downloading;

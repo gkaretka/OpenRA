@@ -1,6 +1,6 @@
 #region Copyright & License Information
 /*
- * Copyright 2007-2017 The OpenRA Developers (see AUTHORS)
+ * Copyright 2007-2018 The OpenRA Developers (see AUTHORS)
  * This file is part of OpenRA, which is free software. It is made
  * available to you under the terms of the GNU General Public License
  * as published by the Free Software Foundation, either version 3 of
@@ -19,6 +19,7 @@ using System.Reflection;
 using System.Text;
 using OpenRA.FileSystem;
 using OpenRA.Graphics;
+using OpenRA.Primitives;
 using OpenRA.Support;
 using OpenRA.Traits;
 
@@ -253,16 +254,27 @@ namespace OpenRA
 				if (!contents.Contains(required))
 					throw new FileNotFoundException("Required file {0} not present in this map".F(required));
 
-			using (var ms = new MemoryStream())
+			var streams = new List<Stream>();
+			try
 			{
 				foreach (var filename in contents)
 					if (filename.EndsWith(".yaml") || filename.EndsWith(".bin") || filename.EndsWith(".lua"))
-						using (var s = package.GetStream(filename))
-							s.CopyTo(ms);
+						streams.Add(package.GetStream(filename));
 
 				// Take the SHA1
-				ms.Seek(0, SeekOrigin.Begin);
-				return CryptoUtil.SHA1Hash(ms);
+				if (streams.Count == 0)
+					return CryptoUtil.SHA1Hash(new byte[0]);
+
+				var merged = streams[0];
+				for (var i = 1; i < streams.Count; i++)
+					merged = new MergedStream(merged, streams[i]);
+
+				return CryptoUtil.SHA1Hash(merged);
+			}
+			finally
+			{
+				foreach (var stream in streams)
+					stream.Dispose();
 			}
 		}
 
@@ -429,7 +441,7 @@ namespace OpenRA
 			{
 				var uv = cell.ToMPos(Grid.Type);
 				cellProjection[uv] = new PPos[0];
-				inverseCellProjection[uv] = new List<MPos>();
+				inverseCellProjection[uv] = new List<MPos>(1);
 			}
 
 			// Initialize projections

@@ -1,6 +1,6 @@
 #region Copyright & License Information
 /*
- * Copyright 2007-2017 The OpenRA Developers (see AUTHORS)
+ * Copyright 2007-2018 The OpenRA Developers (see AUTHORS)
  * This file is part of OpenRA, which is free software. It is made
  * available to you under the terms of the GNU General Public License
  * as published by the Free Software Foundation, either version 3 of
@@ -85,14 +85,6 @@ namespace OpenRA.Mods.Cnc.Traits
 			cursorBlocked = cursor + "-blocked";
 		}
 
-		Actor GetFiringActor(World world, CPos cell)
-		{
-			var pos = world.Map.CenterOfCell(cell);
-			var range = attack.GetMaximumRange().LengthSquared;
-
-			return instance.Instances.Where(i => !i.IsTraitPaused).MinByOrDefault(a => (a.Self.CenterPosition - pos).HorizontalLengthSquared).Self;
-		}
-
 		bool IsValidTarget(World world, CPos cell)
 		{
 			var pos = world.Map.CenterOfCell(cell);
@@ -105,10 +97,8 @@ namespace OpenRA.Mods.Cnc.Traits
 		{
 			world.CancelInputMode();
 			if (mi.Button == expectedButton && IsValidTarget(world, cell))
-				yield return new Order(order, manager.Self, false)
+				yield return new Order(order, manager.Self, Target.FromCell(world, cell), false)
 				{
-					TargetActor = GetFiringActor(world, cell),
-					TargetLocation = cell,
 					SuppressVisualFeedback = true
 				};
 		}

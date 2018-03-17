@@ -1,6 +1,6 @@
 #region Copyright & License Information
 /*
- * Copyright 2007-2017 The OpenRA Developers (see AUTHORS)
+ * Copyright 2007-2018 The OpenRA Developers (see AUTHORS)
  * This file is part of OpenRA, which is free software. It is made
  * available to you under the terms of the GNU General Public License
  * as published by the Free Software Foundation, either version 3 of
@@ -25,6 +25,9 @@ namespace OpenRA.Mods.Common.Traits
 		public readonly string UnitType = "badr";
 		public readonly int SquadSize = 1;
 		public readonly WVec SquadOffset = new WVec(-1536, 1536, 0);
+
+		[Desc("Notification to play when entering the drop zone.")]
+		public readonly string ReinforcementsArrivedSpeechNotification = null;
 
 		[Desc("Number of facings that the delivery aircraft may approach from.")]
 		public readonly int QuantizedFacings = 32;
@@ -111,6 +114,10 @@ namespace OpenRA.Mods.Common.Traits
 						beacon = null;
 					});
 				}
+
+				if (!aircraftInRange.Any(kv => kv.Value))
+					Game.Sound.PlayNotification(self.World.Map.Rules, self.Owner, "Speech",
+						info.ReinforcementsArrivedSpeechNotification, self.Owner.Faction.InternalName);
 
 				aircraftInRange[a] = true;
 			};

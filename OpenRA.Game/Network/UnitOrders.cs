@@ -1,6 +1,6 @@
 #region Copyright & License Information
 /*
- * Copyright 2007-2017 The OpenRA Developers (see AUTHORS)
+ * Copyright 2007-2018 The OpenRA Developers (see AUTHORS)
  * This file is part of OpenRA, which is free software. It is made
  * available to you under the terms of the GNU General Public License
  * as published by the Free Software Foundation, either version 3 of
@@ -16,8 +16,9 @@ using OpenRA.Traits;
 
 namespace OpenRA.Network
 {
-	static class UnitOrders
+	public static class UnitOrders
 	{
+		public const int ChatMessageMaxLength = 2500;
 		const string ServerChatName = "Battlefield Control";
 
 		static Player FindPlayerByClient(this World world, Session.Client c)
@@ -28,7 +29,7 @@ namespace OpenRA.Network
 				p => (p.ClientIndex == c.Index && p.PlayerReference.Playable));
 		}
 
-		public static void ProcessOrder(OrderManager orderManager, World world, int clientId, Order order)
+		internal static void ProcessOrder(OrderManager orderManager, World world, int clientId, Order order)
 		{
 			if (world != null)
 			{
@@ -42,6 +43,12 @@ namespace OpenRA.Network
 				case "Chat":
 					{
 						var client = orderManager.LobbyInfo.ClientWithIndex(clientId);
+
+						// Cut chat messages to the hard limit to avoid exploits
+						var message = order.TargetString;
+						if (message.Length > ChatMessageMaxLength)
+							message = order.TargetString.Substring(0, ChatMessageMaxLength);
+
 						if (client != null)
 						{
 							var player = world != null ? world.FindPlayerByClient(client) : null;
@@ -51,10 +58,10 @@ namespace OpenRA.Network
 							if (orderManager.LocalClient != null && client != orderManager.LocalClient && client.Team > 0 && client.Team == orderManager.LocalClient.Team)
 								suffix += " (Ally)";
 
-							Game.AddChatLine(client.Color.RGB, client.Name + suffix, order.TargetString);
+							Game.AddChatLine(client.Color.RGB, client.Name + suffix, message);
 						}
 						else
-							Game.AddChatLine(Color.White, "(player {0})".F(clientId), order.TargetString);
+							Game.AddChatLine(Color.White, "(player {0})".F(clientId), message);
 						break;
 					}
 
@@ -118,6 +125,11 @@ namespace OpenRA.Network
 						if (client != null)
 						{
 							var pause = order.TargetString == "Pause";
+
+							// Prevent injected unpause orders from restarting a finished game
+							if (orderManager.World.PauseStateLocked && !pause)
+								break;
+
 							if (orderManager.World.Paused != pause && world != null && world.LobbyInfo.NonBotClients.Count() > 1)
 							{
 								var pausetext = "The game is {0} by {1}".F(pause ? "paused" : "un-paused", client.Name);

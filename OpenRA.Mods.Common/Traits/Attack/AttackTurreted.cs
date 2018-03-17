@@ -1,6 +1,6 @@
 #region Copyright & License Information
 /*
- * Copyright 2007-2017 The OpenRA Developers (see AUTHORS)
+ * Copyright 2007-2018 The OpenRA Developers (see AUTHORS)
  * This file is part of OpenRA, which is free software. It is made
  * available to you under the terms of the GNU General Public License
  * as published by the Free Software Foundation, either version 3 of
@@ -17,6 +17,9 @@ namespace OpenRA.Mods.Common.Traits
 	[Desc("Actor has a visual turret used to attack.")]
 	public class AttackTurretedInfo : AttackFollowInfo, Requires<TurretedInfo>
 	{
+		[Desc("Turret names")]
+		public readonly string[] Turrets = { "primary" };
+
 		public override object Create(ActorInitializer init) { return new AttackTurreted(init.Self, this); }
 	}
 
@@ -27,7 +30,7 @@ namespace OpenRA.Mods.Common.Traits
 		public AttackTurreted(Actor self, AttackTurretedInfo info)
 			: base(self, info)
 		{
-			turrets = self.TraitsImplementing<Turreted>().ToArray();
+			turrets = self.TraitsImplementing<Turreted>().Where(t => info.Turrets.Contains(t.Info.Turret)).ToArray();
 		}
 
 		protected override bool CanAttack(Actor self, Target target)

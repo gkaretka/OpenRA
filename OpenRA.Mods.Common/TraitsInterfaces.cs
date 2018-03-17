@@ -1,6 +1,6 @@
 #region Copyright & License Information
 /*
- * Copyright 2007-2017 The OpenRA Developers (see AUTHORS)
+ * Copyright 2007-2018 The OpenRA Developers (see AUTHORS)
  * This file is part of OpenRA, which is free software. It is made
  * available to you under the terms of the GNU General Public License
  * as published by the Free Software Foundation, either version 3 of
@@ -95,12 +95,15 @@ namespace OpenRA.Mods.Common.Traits
 		void AfterRepair(Actor self, Actor target);
 	}
 
+	[RequireExplicitImplementation]
+	public interface INotifyPowerLevelChanged { void PowerLevelChanged(Actor self); }
+
 	public interface INotifyBuildingPlaced { void BuildingPlaced(Actor self); }
 	public interface INotifyNuke { void Launching(Actor self); }
 	public interface INotifyBurstComplete { void FiredBurst(Actor self, Target target, Armament a); }
 	public interface INotifyChat { bool OnChat(string from, string message); }
 	public interface INotifyProduction { void UnitProduced(Actor self, Actor other, CPos exit); }
-	public interface INotifyOtherProduction { void UnitProducedByOther(Actor self, Actor producer, Actor produced); }
+	public interface INotifyOtherProduction { void UnitProducedByOther(Actor self, Actor producer, Actor produced, string productionType); }
 	public interface INotifyDelivery { void IncomingDelivery(Actor self); void Delivered(Actor self); }
 	public interface INotifyDocking { void Docked(Actor self, Actor harvester); void Undocked(Actor self, Actor harvester); }
 	public interface INotifyParachute { void OnParachute(Actor self); void OnLanded(Actor self, Actor ignore); }
@@ -115,7 +118,7 @@ namespace OpenRA.Mods.Common.Traits
 	public interface ISeedableResource { void Seed(Actor self); }
 
 	[RequireExplicitImplementation]
-	public interface INotifyInfiltrated { void Infiltrated(Actor self, Actor infiltrator); }
+	public interface INotifyInfiltrated { void Infiltrated(Actor self, Actor infiltrator, HashSet<string> types); }
 
 	[RequireExplicitImplementation]
 	public interface INotifyBlockingMove { void OnNotifyBlockingMove(Actor self, Actor blocking); }
@@ -149,7 +152,7 @@ namespace OpenRA.Mods.Common.Traits
 	public interface INotifyHarvesterAction
 	{
 		void MovingToResources(Actor self, CPos targetCell, Activity next);
-		void MovingToRefinery(Actor self, CPos targetCell, Activity next);
+		void MovingToRefinery(Actor self, Actor refineryActor, Activity next);
 		void MovementCancelled(Actor self);
 		void Harvested(Actor self, ResourceType resource);
 		void Docked();
@@ -320,6 +323,7 @@ namespace OpenRA.Mods.Common.Traits
 	public interface IIssueDeployOrder
 	{
 		Order IssueDeployOrder(Actor self);
+		bool CanIssueDeployOrder(Actor self);
 	}
 
 	public enum ActorPreviewType { PlaceBuilding, ColorPicker, MapEditorSidebar }
@@ -351,7 +355,7 @@ namespace OpenRA.Mods.Common.Traits
 
 	public interface IRadarSignature
 	{
-		IEnumerable<Pair<CPos, Color>> RadarSignatureCells(Actor self);
+		void PopulateRadarSignatureCells(Actor self, List<Pair<CPos, Color>> destinationBuffer);
 	}
 
 	public interface IRadarColorModifier { Color RadarColorOverride(Actor self, Color color); }
@@ -370,4 +374,19 @@ namespace OpenRA.Mods.Common.Traits
 		void OnObjectiveCompleted(Player player, int objectiveID);
 		void OnObjectiveFailed(Player player, int objectiveID);
 	}
+
+	public interface INotifyCashTransfer
+	{
+		void OnAcceptingCash(Actor self, Actor donor);
+		void OnDeliveringCash(Actor self, Actor acceptor);
+	}
+
+	[RequireExplicitImplementation]
+	public interface ITargetableCells
+	{
+		Pair<CPos, SubCell>[] TargetableCells();
+	}
+
+	[RequireExplicitImplementation]
+	public interface IPreventsShroudReset { bool PreventShroudReset(Actor self); }
 }

@@ -1,6 +1,6 @@
 #region Copyright & License Information
 /*
- * Copyright 2007-2017 The OpenRA Developers (see AUTHORS)
+ * Copyright 2007-2018 The OpenRA Developers (see AUTHORS)
  * This file is part of OpenRA, which is free software. It is made
  * available to you under the terms of the GNU General Public License
  * as published by the Free Software Foundation, either version 3 of
@@ -21,7 +21,6 @@ using System.Net;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
-using OpenRA.Chat;
 using OpenRA.Graphics;
 using OpenRA.Network;
 using OpenRA.Primitives;
@@ -54,8 +53,6 @@ namespace OpenRA
 		public static bool HasInputFocus = false;
 
 		public static bool BenchmarkMode = false;
-
-		public static GlobalChat GlobalChat;
 
 		public static string EngineVersion { get; private set; }
 
@@ -170,8 +167,12 @@ namespace OpenRA
 
 			worldRenderer = new WorldRenderer(ModData, OrderManager.World);
 
+			GC.Collect();
+
 			using (new PerfTimer("LoadComplete"))
 				OrderManager.World.LoadComplete(worldRenderer);
+
+			GC.Collect();
 
 			if (OrderManager.GameStarted)
 				return;
@@ -242,10 +243,17 @@ namespace OpenRA
 
 		public static void InitializeSettings(Arguments args)
 		{
-			Settings = new Settings(Platform.ResolvePath(Path.Combine("^", "settings.yaml")), args);
+			Settings = new Settings(Platform.ResolvePath(Path.Combine(Platform.SupportDirPrefix, "settings.yaml")), args);
 		}
 
-		internal static void Initialize(Arguments args)
+		public static RunStatus InitializeAndRun(string[] args)
+		{
+			Initialize(new Arguments(args));
+			GC.Collect();
+			return Run();
+		}
+
+		static void Initialize(Arguments args)
 		{
 			Console.WriteLine("Platform is {0}", Platform.CurrentPlatform);
 
@@ -319,15 +327,8 @@ namespace OpenRA
 
 			GeoIP.Initialize();
 
-			if (!Settings.Server.DiscoverNatDevices)
-				Settings.Server.AllowPortForward = false;
-			else
-			{
+			if (Settings.Server.DiscoverNatDevices)
 				discoverNat = UPnP.DiscoverNatDevices(Settings.Server.NatDiscoveryTimeout);
-				Settings.Server.AllowPortForward = true;
-			}
-
-			GlobalChat = new GlobalChat();
 
 			var modSearchArg = args.GetValue("Engine.ModSearchPaths", null);
 			var modSearchPaths = modSearchArg != null ?
@@ -455,7 +456,6 @@ namespace OpenRA
 			{
 				Console.WriteLine("NAT discovery failed: {0}", e.Message);
 				Log.Write("nat", e.ToString());
-				Settings.Server.AllowPortForward = false;
 			}
 
 			ModData.LoadScreen.StartGame(args);
@@ -528,7 +528,7 @@ namespace OpenRA
 			ThreadPool.QueueUserWorkItem(_ =>
 			{
 				var mod = ModData.Manifest.Metadata;
-				var directory = Platform.ResolvePath("^", "Screenshots", ModData.Manifest.Id, mod.Version);
+				var directory = Platform.ResolvePath(Platform.SupportDirPrefix, "Screenshots", ModData.Manifest.Id, mod.Version);
 				Directory.CreateDirectory(directory);
 
 				var filename = TimestampedFilename(true);
@@ -786,7 +786,7 @@ namespace OpenRA
 			}
 		}
 
-		internal static RunStatus Run()
+		static RunStatus Run()
 		{
 			if (Settings.Graphics.MaxFramerate < 1)
 			{
@@ -810,7 +810,6 @@ namespace OpenRA
 			ModData.Dispose();
 			ChromeProvider.Deinitialize();
 
-			GlobalChat.Dispose();
 			Sound.Dispose();
 			Renderer.Dispose();
 
@@ -866,8 +865,7 @@ namespace OpenRA
 			{
 				Name = "Skirmish Game",
 				Map = map,
-				AdvertiseOnline = false,
-				AllowPortForward = false
+				AdvertiseOnline = false
 			};
 
 			server = new Server.Server(new IPEndPoint(IPAddress.Loopback, 0), settings, ModData, false);

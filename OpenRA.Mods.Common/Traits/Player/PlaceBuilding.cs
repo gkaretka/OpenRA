@@ -1,6 +1,6 @@
 #region Copyright & License Information
 /*
- * Copyright 2007-2017 The OpenRA Developers (see AUTHORS)
+ * Copyright 2007-2018 The OpenRA Developers (see AUTHORS)
  * This file is part of OpenRA, which is free software. It is made
  * available to you under the terms of the GNU General Public License
  * as published by the Free Software Foundation, either version 3 of
@@ -56,12 +56,13 @@ namespace OpenRA.Mods.Common.Traits
 			self.World.AddFrameEndTask(w =>
 			{
 				var prevItems = GetNumBuildables(self.Owner);
+				var targetActor = w.GetActorById(order.ExtraData);
 
-				if (order.TargetActor.IsDead)
+				if (targetActor == null || targetActor.IsDead)
 					return;
 
 				var unit = self.World.Map.Rules.Actors[order.TargetString];
-				var queue = order.TargetActor.TraitsImplementing<ProductionQueue>()
+				var queue = targetActor.TraitsImplementing<ProductionQueue>()
 					.FirstOrDefault(q => q.CanBuild(unit) && q.CurrentItem() != null && q.CurrentItem().Item == order.TargetString && q.CurrentItem().RemainingTime == 0);
 
 				if (queue == null)
@@ -158,7 +159,7 @@ namespace OpenRA.Mods.Common.Traits
 					// BuildingInfo.IsCloseEnoughToBase has already verified that this is a valid build location
 					var provider = buildingInfo.FindBaseProvider(w, self.Owner, order.TargetLocation);
 					if (provider != null)
-						provider.Trait<BaseProvider>().BeginCooldown();
+						provider.BeginCooldown();
 				}
 
 				if (GetNumBuildables(self.Owner) > prevItems)

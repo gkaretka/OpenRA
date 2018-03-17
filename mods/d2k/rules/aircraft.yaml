@@ -5,7 +5,7 @@ carryall.reinforce:
 	Tooltip:
 		Name: Carryall
 	Health:
-		HP: 4800
+		HP: 48000
 	Armor:
 		Type: light
 	Aircraft:
@@ -27,6 +27,9 @@ carryall.reinforce:
 		RequiresCondition: airborne
 	SpawnActorOnDeath:
 		Actor: carryall.husk
+		RequiresCondition: airborne
+		OwnerType: InternalName
+		EffectiveOwnerFromOwner: true
 	Carryall:
 		LoadingDelay: 10
 		UnloadingDelay: 15
@@ -34,7 +37,7 @@ carryall.reinforce:
 	RenderSprites:
 		Image: carryall
 	SelfHealing:
-		Step: 5
+		Step: 50
 		Delay: 3
 		HealIfBelow: 50
 	Buildable:
@@ -57,6 +60,7 @@ frigate:
 	Inherits: ^Plane
 	ParaDrop:
 		DropRange: 1c0
+	Interactable:
 	Tooltip:
 		Name: Frigate
 	Aircraft:
@@ -78,7 +82,7 @@ ornithopter:
 	Armament:
 		Weapon: OrniBomb
 	Health:
-		HP: 900
+		HP: 9000
 	Armor:
 		Type: light
 	Aircraft:
@@ -94,6 +98,8 @@ ornithopter:
 		Name: Ornithopter
 	SpawnActorOnDeath:
 		Actor: ornithopter.husk
+		OwnerType: InternalName
+		EffectiveOwnerFromOwner: true
 	RejectsOrders:
 	RevealOnFire:
 

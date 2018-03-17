@@ -1,6 +1,6 @@
 #region Copyright & License Information
 /*
- * Copyright 2007-2017 The OpenRA Developers (see AUTHORS)
+ * Copyright 2007-2018 The OpenRA Developers (see AUTHORS)
  * This file is part of OpenRA, which is free software. It is made
  * available to you under the terms of the GNU General Public License
  * as published by the Free Software Foundation, either version 3 of
@@ -30,7 +30,18 @@ namespace OpenRA.Mods.Common.Traits
 
 		public WeaponInfo DemolishWeaponInfo { get; private set; }
 
-		public void RulesetLoaded(Ruleset rules, ActorInfo ai) { DemolishWeaponInfo = rules.Weapons[DemolishWeapon.ToLowerInvariant()]; }
+		[Desc("Types of damage that this bridge causes to units over/in path of it while being destroyed/repaired. Leave empty for no damage types.")]
+		public readonly HashSet<string> DamageTypes = new HashSet<string>();
+
+		public void RulesetLoaded(Ruleset rules, ActorInfo ai)
+		{
+			WeaponInfo weapon;
+			var weaponToLower = (DemolishWeapon ?? string.Empty).ToLowerInvariant();
+			if (!rules.Weapons.TryGetValue(weaponToLower, out weapon))
+				throw new YamlException("Weapons Ruleset does not contain an entry '{0}'".F(weaponToLower));
+
+			DemolishWeaponInfo = weapon;
+		}
 
 		public object Create(ActorInitializer init) { return new GroundLevelBridge(init.Self, this); }
 	}
@@ -87,7 +98,7 @@ namespace OpenRA.Mods.Common.Traits
 			foreach (var c in cells)
 				foreach (var a in self.World.ActorMap.GetActorsAt(c))
 					if (a.Info.HasTraitInfo<IPositionableInfo>() && !a.Trait<IPositionable>().CanEnterCell(c))
-						a.Kill(self);
+						a.Kill(self, Info.DamageTypes);
 		}
 
 		void IBridgeSegment.Repair(Actor repairer)

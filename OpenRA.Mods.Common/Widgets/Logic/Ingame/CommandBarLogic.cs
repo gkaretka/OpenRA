@@ -1,6 +1,6 @@
 #region Copyright & License Information
 /*
- * Copyright 2007-2017 The OpenRA Developers (see AUTHORS)
+ * Copyright 2007-2018 The OpenRA Developers (see AUTHORS)
  * This file is part of OpenRA, which is free software. It is made
  * available to you under the terms of the GNU General Public License
  * as published by the Free Software Foundation, either version 3 of
@@ -155,7 +155,7 @@ namespace OpenRA.Mods.Common.Widgets
 			{
 				BindButtonIcon(deployButton);
 
-				deployButton.IsDisabled = () => { UpdateStateIfNecessary(); return !selectedDeploys.Any(Exts.IsTraitEnabled); };
+				deployButton.IsDisabled = () => { UpdateStateIfNecessary(); return !selectedDeploys.Any(pair => pair.Trait.CanIssueDeployOrder(pair.Actor)); };
 				deployButton.IsHighlighted = () => deployHighlighted > 0;
 				deployButton.OnClick = () =>
 				{
@@ -208,8 +208,8 @@ namespace OpenRA.Mods.Common.Widgets
 				keyOverrides.AddHandler(e =>
 				{
 					// HACK: enable attack move to be triggered if the ctrl key is pressed
-					var modified = new Hotkey(e.Key, e.Modifiers & ~Modifiers.Ctrl);
-					if (!attackMoveDisabled && attackMoveButton.Key.GetValue() == modified)
+					e.Modifiers &= ~Modifiers.Ctrl;
+					if (!attackMoveDisabled && attackMoveButton.Key.IsActivatedBy(e))
 					{
 						attackMoveButton.OnKeyPress(e);
 						return true;
@@ -307,8 +307,9 @@ namespace OpenRA.Mods.Common.Widgets
 			UpdateStateIfNecessary();
 
 			var orders = selectedDeploys
-				.Where(Exts.IsTraitEnabled)
+				.Where(pair => pair.Trait.CanIssueDeployOrder(pair.Actor))
 				.Select(d => d.Trait.IssueDeployOrder(d.Actor))
+				.Where(d => d != null)
 				.ToArray();
 
 			foreach (var o in orders)

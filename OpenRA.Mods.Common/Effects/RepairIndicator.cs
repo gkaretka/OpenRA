@@ -1,6 +1,6 @@
 #region Copyright & License Information
 /*
- * Copyright 2007-2017 The OpenRA Developers (see AUTHORS)
+ * Copyright 2007-2018 The OpenRA Developers (see AUTHORS)
  * This file is part of OpenRA, which is free software. It is made
  * available to you under the terms of the GNU General Public License
  * as published by the Free Software Foundation, either version 3 of
@@ -56,7 +56,10 @@ namespace OpenRA.Mods.Common.Effects
 			else
 				palette = wr.Palette(rb.Info.IndicatorPalettePrefix + rb.Repairers[shownPlayer % rb.Repairers.Count].InternalName);
 
-			return anim.Render(building.CenterPosition, palette);
+			// Size shouldn't scale with pixel doubling
+			// TODO: Remove this RepairIndicator entirely in favor of using WithDecoration
+			var zoom = 1f / wr.Viewport.Zoom;
+			return anim.Render(building.CenterPosition, WVec.Zero, 0, palette, zoom);
 		}
 
 		void CycleRepairer()

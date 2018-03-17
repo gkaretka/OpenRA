@@ -1,6 +1,6 @@
 #region Copyright & License Information
 /*
- * Copyright 2007-2017 The OpenRA Developers (see AUTHORS)
+ * Copyright 2007-2018 The OpenRA Developers (see AUTHORS)
  * This file is part of OpenRA, which is free software. It is made
  * available to you under the terms of the GNU General Public License
  * as published by the Free Software Foundation, either version 3 of
@@ -78,7 +78,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 			// Can't use DeveloperMode.Enabled because there is a hardcoded hack to *always*
 			// enable developer mode for singleplayer games, but we only want to show the button
 			// if it has been explicitly enabled
-			var def = world.Map.Rules.Actors["player"].TraitInfo<DeveloperModeInfo>().Enabled;
+			var def = world.Map.Rules.Actors["player"].TraitInfo<DeveloperModeInfo>().CheckboxEnabled;
 			var developerEnabled = world.LobbyInfo.GlobalSettings.OptionOrDefault("cheats", def);
 			if (lp != null && developerEnabled)
 			{

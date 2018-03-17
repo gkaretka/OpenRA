@@ -1,6 +1,6 @@
 #region Copyright & License Information
 /*
- * Copyright 2007-2017 The OpenRA Developers (see AUTHORS)
+ * Copyright 2007-2018 The OpenRA Developers (see AUTHORS)
  * This file is part of OpenRA, which is free software. It is made
  * available to you under the terms of the GNU General Public License
  * as published by the Free Software Foundation, either version 3 of
@@ -84,22 +84,31 @@ namespace OpenRA.Mods.Cnc.Traits
 
 		public Order IssueOrder(Actor self, IOrderTargeter order, Target target, bool queued)
 		{
-			if (order.OrderID == "PortableChronoDeploy" && CanTeleport)
-				self.World.OrderGenerator = new PortableChronoOrderGenerator(self, Info);
+			if (order.OrderID == "PortableChronoDeploy")
+			{
+				// HACK: Switch the global order generator instead of actually issuing an order
+				if (CanTeleport)
+					self.World.OrderGenerator = new PortableChronoOrderGenerator(self, Info);
+
+				// HACK: We need to issue a fake order to stop the game complaining about the bodge above
+				return new Order(order.OrderID, self, Target.Invalid, queued);
+			}
 
 			if (order.OrderID == "PortableChronoTeleport")
-				return new Order(order.OrderID, self, queued) { TargetLocation = self.World.Map.CellContaining(target.CenterPosition) };
+				return new Order(order.OrderID, self, target, queued);
 
-			return new Order(order.OrderID, self, queued) { TargetActor = target.Actor };
+			return null;
 		}
 
 		public void ResolveOrder(Actor self, Order order)
 		{
-			if (order.OrderString == "PortableChronoTeleport" && CanTeleport)
+			if (order.OrderString == "PortableChronoTeleport" && CanTeleport && order.Target.Type != TargetType.Invalid)
 			{
 				var maxDistance = Info.HasDistanceLimit ? Info.MaxDistance : (int?)null;
 				self.CancelActivity();
-				self.QueueActivity(new Teleport(self, order.TargetLocation, maxDistance, Info.KillCargo, Info.FlashScreen, Info.ChronoshiftSound));
+
+				var cell = self.World.Map.CellContaining(order.Target.CenterPosition);
+				self.QueueActivity(new Teleport(self, cell, maxDistance, Info.KillCargo, Info.FlashScreen, Info.ChronoshiftSound));
 			}
 		}
 
@@ -185,7 +194,7 @@ namespace OpenRA.Mods.Cnc.Traits
 				&& self.Trait<PortableChrono>().CanTeleport && self.Owner.Shroud.IsExplored(cell))
 			{
 				world.CancelInputMode();
-				yield return new Order("PortableChronoTeleport", self, mi.Modifiers.HasModifier(Modifiers.Shift)) { TargetLocation = cell };
+				yield return new Order("PortableChronoTeleport", self, Target.FromCell(world, cell), mi.Modifiers.HasModifier(Modifiers.Shift));
 			}
 		}
 

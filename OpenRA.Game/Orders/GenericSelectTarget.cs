@@ -1,6 +1,6 @@
 #region Copyright & License Information
 /*
- * Copyright 2007-2017 The OpenRA Developers (see AUTHORS)
+ * Copyright 2007-2018 The OpenRA Developers (see AUTHORS)
  * This file is part of OpenRA, which is free software. It is made
  * available to you under the terms of the GNU General Public License
  * as published by the Free Software Foundation, either version 3 of
@@ -10,6 +10,8 @@
 #endregion
 
 using System.Collections.Generic;
+using OpenRA.Graphics;
+using OpenRA.Traits;
 
 namespace OpenRA.Orders
 {
@@ -52,7 +54,7 @@ namespace OpenRA.Orders
 
 				var queued = mi.Modifiers.HasModifier(Modifiers.Shift);
 				foreach (var subject in Subjects)
-					yield return new Order(OrderName, subject, queued) { TargetLocation = cell };
+					yield return new Order(OrderName, subject, Target.FromCell(world, cell), queued);
 			}
 		}
 
@@ -61,7 +63,7 @@ namespace OpenRA.Orders
 			return world.Map.Contains(cell) ? Cursor : "generic-blocked";
 		}
 
-		public override bool InputOverridesSelection(World world, int2 xy, MouseInput mi)
+		public override bool InputOverridesSelection(WorldRenderer wr, World world, int2 xy, MouseInput mi)
 		{
 			// Custom order generators always override selection
 			return true;

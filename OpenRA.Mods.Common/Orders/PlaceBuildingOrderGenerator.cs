@@ -1,6 +1,6 @@
 #region Copyright & License Information
 /*
- * Copyright 2007-2017 The OpenRA Developers (see AUTHORS)
+ * Copyright 2007-2018 The OpenRA Developers (see AUTHORS)
  * This file is part of OpenRA, which is free software. It is made
  * available to you under the terms of the GNU General Public License
  * as published by the Free Software Foundation, either version 3 of
@@ -133,11 +133,13 @@ namespace OpenRA.Mods.Common.Orders
 						orderType = "LineBuild";
 				}
 
-				yield return new Order(orderType, owner.PlayerActor, false)
+				yield return new Order(orderType, owner.PlayerActor, Target.FromCell(world, topLeft), false)
 				{
-					TargetLocation = topLeft,
-					TargetActor = queue.Actor,
+					// Building to place
 					TargetString = building,
+
+					// Actor to associate the placement with
+					ExtraData = queue.Actor.ActorID,
 					SuppressVisualFeedback = true
 				};
 			}
@@ -230,10 +232,10 @@ namespace OpenRA.Mods.Common.Orders
 				foreach (var r in previewRenderables)
 					yield return r;
 
-				var res = world.WorldActor.Trait<ResourceLayer>();
+				var res = world.WorldActor.TraitOrDefault<ResourceLayer>();
 				var isCloseEnough = buildingInfo.IsCloseEnoughToBase(world, world.LocalPlayer, building, topLeft);
 				foreach (var t in buildingInfo.Tiles(topLeft))
-					cells.Add(t, MakeCellType(isCloseEnough && world.IsCellBuildable(t, buildingInfo) && res.GetResource(t) == null));
+					cells.Add(t, MakeCellType(isCloseEnough && world.IsCellBuildable(t, buildingInfo) && (res == null || res.GetResource(t) == null)));
 			}
 
 			var cellPalette = wr.Palette(placeBuildingInfo.Palette);
@@ -267,9 +269,8 @@ namespace OpenRA.Mods.Common.Orders
 				if (availableCells.Count == 0)
 					continue;
 
-				yield return new Order("Move", blocker.Actor, false)
+				yield return new Order("Move", blocker.Actor, Target.FromCell(world, blocker.Actor.ClosestCell(availableCells)), false)
 				{
-					TargetLocation = blocker.Actor.ClosestCell(availableCells),
 					SuppressVisualFeedback = true
 				};
 			}

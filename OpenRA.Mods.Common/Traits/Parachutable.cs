@@ -1,6 +1,6 @@
 #region Copyright & License Information
 /*
- * Copyright 2007-2017 The OpenRA Developers (see AUTHORS)
+ * Copyright 2007-2018 The OpenRA Developers (see AUTHORS)
  * This file is part of OpenRA, which is free software. It is made
  * available to you under the terms of the GNU General Public License
  * as published by the Free Software Foundation, either version 3 of
@@ -21,6 +21,9 @@ namespace OpenRA.Mods.Common.Traits
 	{
 		[Desc("If we land on invalid terrain for my actor type should we be killed?")]
 		public readonly bool KilledOnImpassableTerrain = true;
+
+		[Desc("Types of damage that this trait causes to self when 'KilledOnImpassableTerrain' is true. Leave empty for no damage types.")]
+		public readonly HashSet<string> DamageTypes = new HashSet<string>();
 
 		[Desc("Image where Ground/WaterCorpseSequence is looked up.")]
 		public readonly string Image = "explosion";
@@ -59,6 +62,8 @@ namespace OpenRA.Mods.Common.Traits
 			positionable = self.Trait<IPositionable>();
 		}
 
+		public bool IsInAir { get; private set; }
+
 		void INotifyCreated.Created(Actor self)
 		{
 			conditionManager = self.TraitOrDefault<ConditionManager>();
@@ -66,12 +71,16 @@ namespace OpenRA.Mods.Common.Traits
 
 		void INotifyParachute.OnParachute(Actor self)
 		{
+			IsInAir = true;
+
 			if (conditionManager != null && parachutingToken == ConditionManager.InvalidConditionToken && !string.IsNullOrEmpty(info.ParachutingCondition))
 				parachutingToken = conditionManager.GrantCondition(self, info.ParachutingCondition);
 		}
 
 		void INotifyParachute.OnLanded(Actor self, Actor ignore)
 		{
+			IsInAir = false;
+
 			if (parachutingToken != ConditionManager.InvalidConditionToken)
 				parachutingToken = conditionManager.RevokeCondition(self, parachutingToken);
 
@@ -95,7 +104,7 @@ namespace OpenRA.Mods.Common.Traits
 			if (sequence != null && palette != null)
 				self.World.AddFrameEndTask(w => w.Add(new SpriteEffect(self.OccupiesSpace.CenterPosition, w, info.Image, sequence, palette)));
 
-			self.Kill(self);
+			self.Kill(self, info.DamageTypes);
 		}
 	}
 }

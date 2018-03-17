@@ -1,6 +1,6 @@
 #region Copyright & License Information
 /*
- * Copyright 2007-2017 The OpenRA Developers (see AUTHORS)
+ * Copyright 2007-2018 The OpenRA Developers (see AUTHORS)
  * This file is part of OpenRA, which is free software. It is made
  * available to you under the terms of the GNU General Public License
  * as published by the Free Software Foundation, either version 3 of
@@ -460,7 +460,7 @@ namespace OpenRA.Mods.Common.Traits
 			get { return Util.ApplyPercentageModifiers(Info.Speed, speedModifiers); }
 		}
 
-		public IEnumerable<Pair<CPos, SubCell>> OccupiedCells() { return NoCells; }
+		public Pair<CPos, SubCell>[] OccupiedCells() { return NoCells; }
 
 		public WVec FlyStep(int facing)
 		{
@@ -655,29 +655,35 @@ namespace OpenRA.Mods.Common.Traits
 
 		public Order IssueOrder(Actor self, IOrderTargeter order, Target target, bool queued)
 		{
-			if (order.OrderID == "Enter")
-				return new Order(order.OrderID, self, queued) { TargetActor = target.Actor };
-
-			if (order.OrderID == "Move")
-				return new Order(order.OrderID, self, queued) { TargetLocation = self.World.Map.CellContaining(target.CenterPosition) };
+			if (order.OrderID == "Enter" || order.OrderID == "Move")
+				return new Order(order.OrderID, self, target, queued);
 
 			return null;
 		}
 
 		Order IIssueDeployOrder.IssueDeployOrder(Actor self)
 		{
+			if (!Info.RearmBuildings.Any())
+				return null;
+
 			return new Order("ReturnToBase", self, false);
 		}
 
+		bool IIssueDeployOrder.CanIssueDeployOrder(Actor self) { return Info.RearmBuildings.Any(); }
+
 		public string VoicePhraseForOrder(Actor self, Order order)
 		{
+			if (!Info.MoveIntoShroud && !self.Owner.Shroud.IsExplored(order.TargetLocation))
+				return null;
+
 			switch (order.OrderString)
 			{
 				case "Move":
 				case "Enter":
-				case "ReturnToBase":
 				case "Stop":
 					return Info.Voice;
+				case "ReturnToBase":
+					return Info.RearmBuildings.Any() ? Info.Voice : null;
 				default: return null;
 			}
 		}
@@ -731,7 +737,7 @@ namespace OpenRA.Mods.Common.Traits
 
 						Action enter = () =>
 						{
-							var exit = order.TargetActor.Info.TraitInfos<ExitInfo>().FirstOrDefault();
+							var exit = order.TargetActor.Info.FirstExitOrDefault(null);
 							var offset = (exit != null) ? exit.SpawnOffset : WVec.Zero;
 
 							self.QueueActivity(new HeliFly(self, Target.FromPos(order.TargetActor.CenterPosition + offset)));
@@ -764,7 +770,7 @@ namespace OpenRA.Mods.Common.Traits
 					self.QueueActivity(new HeliLand(self, true));
 				}
 			}
-			else if (order.OrderString == "ReturnToBase")
+			else if (order.OrderString == "ReturnToBase" && Info.RearmBuildings.Any())
 			{
 				UnReserve();
 				self.CancelActivity();

@@ -1,6 +1,6 @@
 #region Copyright & License Information
 /*
- * Copyright 2007-2017 The OpenRA Developers (see AUTHORS)
+ * Copyright 2007-2018 The OpenRA Developers (see AUTHORS)
  * This file is part of OpenRA, which is free software. It is made
  * available to you under the terms of the GNU General Public License
  * as published by the Free Software Foundation, either version 3 of
@@ -65,10 +65,7 @@ namespace OpenRA.Mods.Common.Traits
 			if (order.OrderID != "CaptureActor")
 				return null;
 
-			if (target.Type == TargetType.FrozenActor)
-				return new Order(order.OrderID, self, queued) { ExtraData = target.FrozenActor.ID };
-
-			return new Order(order.OrderID, self, queued) { TargetActor = target.Actor };
+			return new Order(order.OrderID, self, target, queued);
 		}
 
 		public string VoicePhraseForOrder(Actor self, Order order)
@@ -104,7 +101,7 @@ namespace OpenRA.Mods.Common.Traits
 
 			public override bool CanTargetActor(Actor self, Actor target, TargetModifiers modifiers, ref string cursor)
 			{
-				var c = target.Info.TraitInfoOrDefault<CapturableInfo>();
+				var c = target.TraitOrDefault<Capturable>();
 				if (c == null || !c.CanBeTargetedBy(self, target.Owner))
 				{
 					cursor = capturesInfo.EnterBlockedCursor;
@@ -112,15 +109,20 @@ namespace OpenRA.Mods.Common.Traits
 				}
 
 				var health = target.Trait<Health>();
-				var lowEnoughHealth = health.HP <= c.CaptureThreshold * health.MaxHP / 100;
+
+				// Cast to long to avoid overflow when multiplying by the health
+				var lowEnoughHealth = health.HP <= (int)(c.Info.CaptureThreshold * (long)health.MaxHP / 100);
 
 				cursor = !capturesInfo.Sabotage || lowEnoughHealth || target.Owner.NonCombatant
 					? capturesInfo.EnterCursor : capturesInfo.SabotageCursor;
+
 				return true;
 			}
 
 			public override bool CanTargetFrozenActor(Actor self, FrozenActor target, TargetModifiers modifiers, ref string cursor)
 			{
+				// TODO: This doesn't account for disabled traits.
+				// Actors with FrozenUnderFog should not disable the Capturable trait.
 				var c = target.Info.TraitInfoOrDefault<CapturableInfo>();
 				if (c == null || !c.CanBeTargetedBy(self, target.Owner))
 				{
@@ -129,7 +131,9 @@ namespace OpenRA.Mods.Common.Traits
 				}
 
 				var health = target.Info.TraitInfoOrDefault<HealthInfo>();
-				var lowEnoughHealth = target.HP <= c.CaptureThreshold * health.HP / 100;
+
+				// Cast to long to avoid overflow when multiplying by the health
+				var lowEnoughHealth = target.HP <= (int)(c.CaptureThreshold * (long)health.HP / 100);
 
 				cursor = !capturesInfo.Sabotage || lowEnoughHealth || target.Owner.NonCombatant
 					? capturesInfo.EnterCursor : capturesInfo.SabotageCursor;

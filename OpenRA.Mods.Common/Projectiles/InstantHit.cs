@@ -1,6 +1,6 @@
 #region Copyright & License Information
 /*
- * Copyright 2007-2017 The OpenRA Developers (see AUTHORS)
+ * Copyright 2007-2018 The OpenRA Developers (see AUTHORS)
  * This file is part of OpenRA, which is free software. It is made
  * available to you under the terms of the GNU General Public License
  * as published by the Free Software Foundation, either version 3 of
@@ -19,7 +19,7 @@ using OpenRA.Traits;
 namespace OpenRA.Mods.Common.Projectiles
 {
 	[Desc("Simple, invisible, usually direct-on-target projectile.")]
-	public class InstantHitInfo : IProjectileInfo, IRulesetLoaded<WeaponInfo>
+	public class InstantHitInfo : IProjectileInfo
 	{
 		[Desc("Maximum offset at the maximum range.")]
 		public readonly WDist Inaccuracy = WDist.Zero;
@@ -35,12 +35,6 @@ namespace OpenRA.Mods.Common.Projectiles
 		public WDist BlockerScanRadius = new WDist(-1);
 
 		public IProjectile Create(ProjectileArgs args) { return new InstantHit(this, args); }
-
-		void IRulesetLoaded<WeaponInfo>.RulesetLoaded(Ruleset rules, WeaponInfo wi)
-		{
-			if (BlockerScanRadius < WDist.Zero)
-				BlockerScanRadius = Util.MinimumRequiredBlockerScanRadius(rules);
-		}
 	}
 
 	public class InstantHit : IProjectile
@@ -74,7 +68,7 @@ namespace OpenRA.Mods.Common.Projectiles
 			// Check for blocking actors
 			WPos blockedPos;
 			if (info.Blockable && BlocksProjectiles.AnyBlockingActorsBetween(world, source, target.CenterPosition,
-				info.Width, info.BlockerScanRadius, out blockedPos))
+				info.Width, out blockedPos))
 			{
 				target = Target.FromPos(blockedPos);
 			}

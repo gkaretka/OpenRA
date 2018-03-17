@@ -12,7 +12,7 @@ light_inf:
 	Tooltip:
 		Name: Light Infantry
 	Health:
-		HP: 600
+		HP: 6000
 	Mobile:
 		Speed: 43
 	Armament:
@@ -25,7 +25,7 @@ engineer:
 	Inherits: ^Infantry
 	Buildable:
 		Queue: Infantry
-		BuildPaletteOrder: 50
+		BuildPaletteOrder: 30
 		Prerequisites: upgrade.barracks, ~techlevel.medium
 		BuildDuration: 108
 		BuildDurationModifier: 40
@@ -35,7 +35,7 @@ engineer:
 	Tooltip:
 		Name: Engineer
 	Health:
-		HP: 500
+		HP: 5000
 	RevealsShroud:
 		Range: 2c768
 	Mobile:
@@ -63,7 +63,7 @@ trooper:
 	Tooltip:
 		Name: Trooper
 	Health:
-		HP: 700
+		HP: 7000
 	RevealsShroud:
 		Range: 4c768
 	Mobile:
@@ -82,7 +82,7 @@ thumper:
 	-RevealOnFire:
 	Buildable:
 		Queue: Infantry
-		BuildPaletteOrder: 60
+		BuildPaletteOrder: 40
 		Prerequisites: upgrade.barracks, ~techlevel.high
 		BuildDuration: 108
 		BuildDurationModifier: 40
@@ -92,7 +92,7 @@ thumper:
 	Tooltip:
 		Name: Thumper Infantry
 	Health:
-		HP: 375
+		HP: 3750
 	RevealsShroud:
 		Range: 2c768
 	Mobile:
@@ -129,7 +129,7 @@ fremen:
 		Name: Fremen
 	Buildable:
 		Queue: Infantry
-		BuildPaletteOrder: 100
+		BuildPaletteOrder: 80
 		Prerequisites: ~disabled
 		Description: Elite infantry unit armed with assault rifles and rockets\n  Strong vs Infantry, Vehicles\n  Weak vs Artillery\n  Special Ability: Invisibility
 	Mobile:
@@ -137,7 +137,7 @@ fremen:
 	Valued:
 		Cost: 200	## actually 0, but spawns from support power at Palace
 	Health:
-		HP: 700
+		HP: 7000
 	RevealsShroud:
 		Range: 4c768
 	AutoTarget:
@@ -169,7 +169,7 @@ grenadier:
 	Inherits@AUTOTARGET: ^AutoTargetGroundAssaultMove
 	Buildable:
 		Queue: Infantry
-		BuildPaletteOrder: 80
+		BuildPaletteOrder: 60
 		Prerequisites: ~barracks.atreides, upgrade.barracks, high_tech_factory, ~techlevel.medium
 		BuildDuration: 81	## Wasn't converted, copied from Sardauker who has same value in TibEd.
 		BuildDurationModifier: 40
@@ -179,7 +179,7 @@ grenadier:
 	Tooltip:
 		Name: Grenadier
 	Health:
-		HP: 600
+		HP: 6000
 	Mobile:
 		Speed: 43
 	Armament:
@@ -200,17 +200,17 @@ sardaukar:
 	Inherits@AUTOTARGET: ^AutoTargetGroundAssaultMove
 	Buildable:
 		Queue: Infantry
-		BuildPaletteOrder: 80
-		Prerequisites: ~barracks.harkonnen, upgrade.barracks, high_tech_factory, ~techlevel.medium
+		BuildPaletteOrder: 50
+		Prerequisites: ~palace.sardaukar, ~techlevel.high
 		BuildDuration: 81
 		BuildDurationModifier: 40
-		Description: Elite assault infantry\n  Strong vs Infantry, Vehicles\n  Weak vs Artillery
+		Description: Elite assault infantry of Corrino\n  Strong vs Infantry, Vehicles\n  Weak vs Artillery
 	Valued:
-		Cost: 200
+		Cost: 120
 	Tooltip:
 		Name: Sardaukar
 	Health:
-		HP: 1000
+		HP: 10000
 	Mobile:
 		Speed: 31
 	RevealsShroud:
@@ -229,6 +229,23 @@ sardaukar:
 		EmptyWeapon: SardDeath
 		Chance: 100
 
+mpsardaukar:
+	Inherits: sardaukar
+	Buildable:
+		Queue: Infantry
+		BuildPaletteOrder: 70
+		Prerequisites: ~barracks.harkonnen, upgrade.barracks, high_tech_factory, ~techlevel.medium
+		BuildDuration: 133
+		Description: Elite assault infantry of Harkonnen\n  Strong vs Infantry, Vehicles\n  Weak vs Artillery
+	Valued:
+		Cost: 200
+	Armament@PRIMARY:
+		Weapon: M_LMG_H
+	Armament@SECONDARY:
+		Weapon: M_HMG_H
+	RenderSprites:
+		Image: sardaukar
+
 saboteur:
 	Inherits: ^Infantry
 	Buildable:
@@ -241,7 +258,7 @@ saboteur:
 	Tooltip:
 		Name: Saboteur
 	Health:
-		HP: 400
+		HP: 4000
 	Mobile:
 		Speed: 43
 	Demolition:
@@ -266,7 +283,7 @@ nsfremen:
 	Inherits: fremen
 	Tooltip:
 	Buildable:
-		BuildPaletteOrder: 105
+		BuildPaletteOrder: 90
 		Prerequisites: ~disabled
 		Description: Elite infantry unit armed with assault rifles and rockets\n  Strong vs Infantry, Vehicles\n  Weak vs Artillery
 	RenderSprites:

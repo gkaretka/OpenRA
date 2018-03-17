@@ -1,6 +1,6 @@
 #region Copyright & License Information
 /*
- * Copyright 2007-2017 The OpenRA Developers (see AUTHORS)
+ * Copyright 2007-2018 The OpenRA Developers (see AUTHORS)
  * This file is part of OpenRA, which is free software. It is made
  * available to you under the terms of the GNU General Public License
  * as published by the Free Software Foundation, either version 3 of
@@ -96,7 +96,7 @@ namespace OpenRA.Mods.Common.Graphics
 			public FinalizedModelRenderable(WorldRenderer wr, ModelRenderable model)
 			{
 				this.model = model;
-				var draw = model.models.Where(v => v.DisableFunc == null || !v.DisableFunc());
+				var draw = model.models.Where(v => v.IsVisible);
 
 				renderProxy = Game.Renderer.WorldModelRenderer.RenderAsync(
 					wr, draw, model.camera, model.scale, GroundNormal, model.lightSource,
@@ -152,7 +152,7 @@ namespace OpenRA.Mods.Common.Graphics
 				}, iz, c);
 
 				// Draw bounding box
-				var draw = model.models.Where(v => v.DisableFunc == null || !v.DisableFunc());
+				var draw = model.models.Where(v => v.IsVisible);
 				var scaleTransform = OpenRA.Graphics.Util.ScaleMatrix(model.scale, model.scale, model.scale);
 				var cameraTransform = OpenRA.Graphics.Util.MakeFloatMatrix(model.camera.AsMatrix());
 
@@ -203,7 +203,7 @@ namespace OpenRA.Mods.Common.Graphics
 			Pair<Rectangle, float2> Screen3DBounds(WorldRenderer wr)
 			{
 				var pxOrigin = wr.ScreenPosition(model.pos);
-				var draw = model.models.Where(v => v.DisableFunc == null || !v.DisableFunc());
+				var draw = model.models.Where(v => v.IsVisible);
 				var scaleTransform = OpenRA.Graphics.Util.ScaleMatrix(model.scale, model.scale, model.scale);
 				var cameraTransform = OpenRA.Graphics.Util.MakeFloatMatrix(model.camera.AsMatrix());
 

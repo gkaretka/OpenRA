@@ -1,6 +1,6 @@
 #region Copyright & License Information
 /*
- * Copyright 2007-2017 The OpenRA Developers (see AUTHORS)
+ * Copyright 2007-2018 The OpenRA Developers (see AUTHORS)
  * This file is part of OpenRA, which is free software. It is made
  * available to you under the terms of the GNU General Public License
  * as published by the Free Software Foundation, either version 3 of
@@ -10,6 +10,7 @@
 #endregion
 
 using System;
+using System.Drawing;
 using System.Linq;
 using OpenRA.Graphics;
 using OpenRA.Mods.Cnc.FileFormats;
@@ -124,6 +125,34 @@ namespace OpenRA.Mods.Cnc.Graphics
 			}
 
 			return ret;
+		}
+
+		public Rectangle AggregateBounds
+		{
+			get
+			{
+				// Corner offsets
+				var ix = new uint[] { 0, 0, 0, 0, 3, 3, 3, 3 };
+				var iy = new uint[] { 1, 1, 4, 4, 1, 1, 4, 4 };
+				var iz = new uint[] { 2, 5, 2, 5, 2, 5, 2, 5 };
+
+				// Calculate the smallest sphere that covers the model limbs
+				var rSquared = 0f;
+				for (var f = 0U; f < frames; f++)
+				{
+					var bounds = Bounds(f);
+					for (var i = 0; i < 8; i++)
+					{
+						var x = bounds[ix[i]];
+						var y = bounds[iy[i]];
+						var z = bounds[iz[i]];
+						rSquared = Math.Max(rSquared, x * x + y * y + z * z);
+					}
+				}
+
+				var r = (int)Math.Sqrt(rSquared) + 1;
+				return Rectangle.FromLTRB(-r, -r, r, r);
+			}
 		}
 	}
 }

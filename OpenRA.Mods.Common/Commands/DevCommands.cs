@@ -1,6 +1,6 @@
 #region Copyright & License Information
 /*
- * Copyright 2007-2017 The OpenRA Developers (see AUTHORS)
+ * Copyright 2007-2018 The OpenRA Developers (see AUTHORS)
  * This file is part of OpenRA, which is free software. It is made
  * available to you under the terms of the GNU General Public License
  * as published by the Free Software Foundation, either version 3 of
@@ -10,6 +10,7 @@
 #endregion
 
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using OpenRA.Graphics;
@@ -54,6 +55,8 @@ namespace OpenRA.Mods.Common.Commands
 			register("crash", "crashes the game.");
 			register("levelup", "adds a specified number of levels to the selected actors.");
 			register("poweroutage", "causes owners of selected actors to have a 5 second power outage.");
+			register("kill", "kills selected actors.");
+			register("dispose", "disposes selected actors.");
 		}
 
 		public void InvokeCommand(string name, string arg)
@@ -128,6 +131,28 @@ namespace OpenRA.Mods.Common.Commands
 				case "poweroutage":
 					foreach (var player in world.Selection.Actors.Select(a => a.Owner.PlayerActor).Distinct())
 						world.IssueOrder(new Order("PowerOutage", player, false) { ExtraData = 250 });
+					break;
+
+				case "kill":
+					foreach (var actor in world.Selection.Actors)
+					{
+						if (actor.IsDead)
+							continue;
+
+						world.IssueOrder(new Order("DevKill", world.LocalPlayer.PlayerActor, Target.FromActor(actor), false) { TargetString = arg });
+					}
+
+					break;
+
+				case "dispose":
+					foreach (var actor in world.Selection.Actors)
+					{
+						if (actor.Disposed)
+							continue;
+
+						world.IssueOrder(new Order("DevDispose", world.LocalPlayer.PlayerActor, Target.FromActor(actor), false));
+					}
+
 					break;
 			}
 		}

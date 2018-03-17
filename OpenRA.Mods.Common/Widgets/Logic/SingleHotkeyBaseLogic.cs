@@ -1,6 +1,6 @@
 #region Copyright & License Information
 /*
- * Copyright 2007-2017 The OpenRA Developers (see AUTHORS)
+ * Copyright 2007-2018 The OpenRA Developers (see AUTHORS)
  * This file is part of OpenRA, which is free software. It is made
  * available to you under the terms of the GNU General Public License
  * as published by the Free Software Foundation, either version 3 of
@@ -17,24 +17,20 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 {
 	public abstract class SingleHotkeyBaseLogic : ChromeLogic
 	{
-		protected SingleHotkeyBaseLogic(Widget widget, string argName, string parentName, Dictionary<string, MiniYaml> logicArgs)
+		protected SingleHotkeyBaseLogic(Widget widget, ModData modData, string argName, string parentName, Dictionary<string, MiniYaml> logicArgs)
 		{
-			var ks = Game.Settings.Keys;
 			MiniYaml yaml;
 
-			var namedKey = new NamedHotkey();
+			var namedKey = new HotkeyReference();
 			if (logicArgs.TryGetValue(argName, out yaml))
-				namedKey = new NamedHotkey(yaml.Value, ks);
+				namedKey = modData.Hotkeys[yaml.Value];
 
 			var keyhandler = widget.Get<LogicKeyListenerWidget>(parentName);
 			keyhandler.AddHandler(e =>
 			{
 				if (e.Event == KeyInputEvent.Down)
-				{
-					var key = Hotkey.FromKeyInput(e);
-					if (key == namedKey.GetValue())
+					if (namedKey.IsActivatedBy(e))
 						return OnHotkeyActivated(e);
-				}
 
 				return false;
 			});

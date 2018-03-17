@@ -1,6 +1,6 @@
 #region Copyright & License Information
 /*
- * Copyright 2007-2017 The OpenRA Developers (see AUTHORS)
+ * Copyright 2007-2018 The OpenRA Developers (see AUTHORS)
  * This file is part of OpenRA, which is free software. It is made
  * available to you under the terms of the GNU General Public License
  * as published by the Free Software Foundation, either version 3 of
@@ -62,8 +62,8 @@ namespace OpenRA.Mods.Common.Traits
 					Powers.Add(key, new SupportPowerInstance(key, this)
 					{
 						Instances = new List<SupportPower>(),
-						RemainingTime = t.Info.StartFullyCharged ? 0 : t.Info.ChargeTime * 25,
-						TotalTime = t.Info.ChargeTime * 25,
+						RemainingTime = t.Info.StartFullyCharged ? 0 : t.Info.ChargeInterval,
+						TotalTime = t.Info.ChargeInterval,
 					});
 
 					if (t.Info.Prerequisites.Any())
@@ -124,7 +124,8 @@ namespace OpenRA.Mods.Common.Traits
 				return NoInstances;
 
 			return a.TraitsImplementing<SupportPower>()
-				.Select(t => Powers[MakeKey(t)]);
+				.Select(t => Powers[MakeKey(t)])
+				.Where(p => p.Instances.Any(i => !i.IsTraitDisabled && i.Self == a));
 		}
 
 		public void PrerequisitesAvailable(string key)
@@ -232,7 +233,7 @@ namespace OpenRA.Mods.Common.Traits
 			if (!Ready)
 				return;
 
-			var power = Instances.Where(i => !i.IsTraitPaused)
+			var power = Instances.Where(i => !i.IsTraitPaused && !i.IsTraitDisabled)
 				.MinByOrDefault(a =>
 				{
 					if (a.Self.OccupiesSpace == null)
@@ -280,7 +281,7 @@ namespace OpenRA.Mods.Common.Traits
 		{
 			world.CancelInputMode();
 			if (mi.Button == expectedButton && world.Map.Contains(cell))
-				yield return new Order(order, manager.Self, false) { TargetLocation = cell, SuppressVisualFeedback = true };
+				yield return new Order(order, manager.Self, Target.FromCell(world, cell), false) { SuppressVisualFeedback = true };
 		}
 
 		public virtual void Tick(World world)

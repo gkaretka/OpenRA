@@ -1,6 +1,6 @@
 #region Copyright & License Information
 /*
- * Copyright 2007-2017 The OpenRA Developers (see AUTHORS)
+ * Copyright 2007-2018 The OpenRA Developers (see AUTHORS)
  * This file is part of OpenRA, which is free software. It is made
  * available to you under the terms of the GNU General Public License
  * as published by the Free Software Foundation, either version 3 of
@@ -22,8 +22,8 @@ namespace OpenRA.Mods.Common.Widgets.Logic.Ingame
 		StatusBarsType[] options = { StatusBarsType.Standard, StatusBarsType.DamageShow, StatusBarsType.AlwaysShow };
 
 		[ObjectCreator.UseCtor]
-		public CycleStatusBarsHotkeyLogic(Widget widget, Dictionary<string, MiniYaml> logicArgs)
-			: base(widget, "CycleStatusBarsKey", "WORLD_KEYHANDLER", logicArgs) { }
+		public CycleStatusBarsHotkeyLogic(Widget widget, ModData modData, Dictionary<string, MiniYaml> logicArgs)
+			: base(widget, modData, "CycleStatusBarsKey", "WORLD_KEYHANDLER", logicArgs) { }
 
 		protected override bool OnHotkeyActivated(KeyInput e)
 		{

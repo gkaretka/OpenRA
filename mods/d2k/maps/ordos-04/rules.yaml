@@ -34,6 +34,13 @@ medium_gun_turret:
 outpost:
 	Buildable:
 		Prerequisites: barracks
+	ExternalCondition@lua:
+		Condition: modified
+	Tooltip:
+		RequiresCondition: !modified
+	Tooltip@Modified:
+		Name: Modified Outpost
+		RequiresCondition: modified
 
 quad:
 	Buildable:
@@ -46,14 +53,6 @@ trooper:
 engineer:
 	Buildable:
 		Prerequisites: upgrade.barracks
-
-light_factory:
-	ProvidesPrerequisite@ordos:
-		Factions: ordos, smuggler
-
-heavy_factory:
-	ProvidesPrerequisite@ordos:
-		Factions: ordos, smuggler
 
 repair_pad:
 	Buildable:

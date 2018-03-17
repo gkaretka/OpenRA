@@ -1,6 +1,6 @@
 #region Copyright & License Information
 /*
- * Copyright 2007-2017 The OpenRA Developers (see AUTHORS)
+ * Copyright 2007-2018 The OpenRA Developers (see AUTHORS)
  * This file is part of OpenRA, which is free software. It is made
  * available to you under the terms of the GNU General Public License
  * as published by the Free Software Foundation, either version 3 of
@@ -71,12 +71,13 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 			chatMode.IsDisabled = () => disableTeamChat;
 
 			chatText = chatChrome.Get<TextFieldWidget>("CHAT_TEXTFIELD");
+			chatText.MaxLength = UnitOrders.ChatMessageMaxLength;
 			chatText.OnEnterKey = () =>
 			{
 				var team = teamChat && !disableTeamChat;
 				if (chatText.Text != "")
 				{
-					if (!chatText.Text.StartsWith("/"))
+					if (!chatText.Text.StartsWith("/", StringComparison.Ordinal))
 						orderManager.IssueOrder(Order.Chat(team, chatText.Text.Trim()));
 					else if (chatTraits != null)
 					{
@@ -144,7 +145,6 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 				AddChatLine(chatLine.Color, chatLine.Name, chatLine.Text, true);
 
 			orderManager.AddChatLine += AddChatLineWrapper;
-			Game.BeforeGameStart += UnregisterEvents;
 
 			chatText.IsDisabled = () => world.IsReplay && !Game.Settings.Debug.EnableDebugCommandsInReplays;
 
@@ -176,12 +176,6 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 			return true;
 		}
 
-		void UnregisterEvents()
-		{
-			orderManager.AddChatLine -= AddChatLineWrapper;
-			Game.BeforeGameStart -= UnregisterEvents;
-		}
-
 		public void OpenChat()
 		{
 			chatText.Text = "";
@@ -202,14 +196,16 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 
 		public void AddChatLineWrapper(Color c, string from, string text)
 		{
-			AddChatLine(c, from, text, false);
-		}
-
-		void AddChatLine(Color c, string from, string text, bool replayCache)
-		{
-			if (!replayCache && chatOverlayDisplay != null)
+			if (chatOverlayDisplay != null)
 				chatOverlayDisplay.AddLine(c, from, text);
 
+			// HACK: Force disable the chat notification sound for the in-menu chat dialog
+			// This works around our inability to disable the sounds for the in-game dialog when it is hidden
+			AddChatLine(c, from, text, chatOverlay == null);
+		}
+
+		void AddChatLine(Color c, string from, string text, bool suppressSound)
+		{
 			var template = chatTemplate.Clone();
 			var nameLabel = template.Get<LabelWidget>("NAME");
 			var textLabel = template.Get<LabelWidget>("TEXT");
@@ -242,8 +238,20 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 			if (scrolledToBottom)
 				chatScrollPanel.ScrollToBottom(smooth: true);
 
-			if (!replayCache)
+			if (!suppressSound)
 				Game.Sound.PlayNotification(modRules, null, "Sounds", "ChatLine", null);
+		}
+
+		bool disposed = false;
+		protected override void Dispose(bool disposing)
+		{
+			if (!disposed)
+			{
+				orderManager.AddChatLine -= AddChatLineWrapper;
+				disposed = true;
+			}
+
+			base.Dispose(disposing);
 		}
 	}
 }

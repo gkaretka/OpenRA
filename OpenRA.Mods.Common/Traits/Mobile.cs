@@ -1,6 +1,6 @@
 #region Copyright & License Information
 /*
- * Copyright 2007-2017 The OpenRA Developers (see AUTHORS)
+ * Copyright 2007-2018 The OpenRA Developers (see AUTHORS)
  * This file is part of OpenRA, which is free software. It is made
  * available to you under the terms of the GNU General Public License
  * as published by the Free Software Foundation, either version 3 of
@@ -58,6 +58,9 @@ namespace OpenRA.Mods.Common.Traits
 
 		[Desc("e.g. crate, wall, infantry")]
 		public readonly HashSet<string> Crushes = new HashSet<string>();
+
+		[Desc("Types of damage that are caused while crushing. Leave empty for no damage types.")]
+		public readonly HashSet<string> CrushDamageTypes = new HashSet<string>();
 
 		public readonly int WaitAverage = 5;
 
@@ -326,20 +329,11 @@ namespace OpenRA.Mods.Common.Traits
 			// If the other actor in our way cannot be crushed, we are blocked.
 			// PERF: Avoid LINQ.
 			var crushables = otherActor.TraitsImplementing<ICrushable>();
-			var lacksCrushability = true;
 			foreach (var crushable in crushables)
-			{
-				lacksCrushability = false;
-				if (!crushable.CrushableBy(otherActor, self, Crushes))
-					return true;
-			}
+				if (crushable.CrushableBy(otherActor, self, Crushes))
+					return false;
 
-			// If there are no crushable traits at all, this means the other actor cannot be crushed - we are blocked.
-			if (lacksCrushability)
-				return true;
-
-			// We are not blocked by the other actor.
-			return false;
+			return true;
 		}
 
 		public WorldMovementInfo GetWorldMovementInfo(World world)
@@ -569,12 +563,12 @@ namespace OpenRA.Mods.Common.Traits
 			}
 		}
 
-		public void AddedToWorld(Actor self)
+		void INotifyAddedToWorld.AddedToWorld(Actor self)
 		{
 			self.World.AddToMaps(self, this);
 		}
 
-		public void RemovedFromWorld(Actor self)
+		void INotifyRemovedFromWorld.RemovedFromWorld(Actor self)
 		{
 			self.World.RemoveFromMaps(self, this);
 		}
@@ -585,7 +579,7 @@ namespace OpenRA.Mods.Common.Traits
 		public Order IssueOrder(Actor self, IOrderTargeter order, Target target, bool queued)
 		{
 			if (order is MoveOrderTargeter)
-				return new Order("Move", self, queued) { TargetLocation = self.World.Map.CellContaining(target.CenterPosition) };
+				return new Order("Move", self, target, queued);
 
 			return null;
 		}
@@ -649,6 +643,9 @@ namespace OpenRA.Mods.Common.Traits
 
 		public string VoicePhraseForOrder(Actor self, Order order)
 		{
+			if (!Info.MoveIntoShroud && !self.Owner.Shroud.IsExplored(order.TargetLocation))
+				return null;
+
 			switch (order.OrderString)
 			{
 				case "Move":
@@ -662,7 +659,7 @@ namespace OpenRA.Mods.Common.Traits
 
 		public CPos TopLeft { get { return ToCell; } }
 
-		public IEnumerable<Pair<CPos, SubCell>> OccupiedCells()
+		public Pair<CPos, SubCell>[] OccupiedCells()
 		{
 			if (FromCell == ToCell)
 				return new[] { Pair.New(FromCell, FromSubCell) };
@@ -734,10 +731,10 @@ namespace OpenRA.Mods.Common.Traits
 				return false;
 
 			foreach (var crushes in crushables)
-				if (!crushes.Trait.CrushableBy(crushes.Actor, self, Info.Crushes))
-					return false;
+				if (crushes.Trait.CrushableBy(crushes.Actor, self, Info.Crushes))
+					return true;
 
-			return true;
+			return false;
 		}
 
 		public int MovementSpeedForCell(Actor self, CPos cell)

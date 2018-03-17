@@ -1,6 +1,6 @@
 #region Copyright & License Information
 /*
- * Copyright 2007-2017 The OpenRA Developers (see AUTHORS)
+ * Copyright 2007-2018 The OpenRA Developers (see AUTHORS)
  * This file is part of OpenRA, which is free software. It is made
  * available to you under the terms of the GNU General Public License
  * as published by the Free Software Foundation, either version 3 of
@@ -37,6 +37,7 @@ namespace OpenRA.Mods.Common.Effects
 
 		WPos pos;
 		int ticks;
+		bool isAddedToScreenMap;
 
 		public NukeLaunch(Player firedBy, string name, WeaponInfo weapon, string weaponPalette, string upSequence, string downSequence,
 			WPos launchPos, WPos targetPos, WDist velocity, int delay, bool skipAscent, string flashType)
@@ -64,12 +65,16 @@ namespace OpenRA.Mods.Common.Effects
 
 			if (skipAscent)
 				ticks = turn;
-
-			firedBy.World.ScreenMap.Add(this, pos, anim.Image);
 		}
 
 		public void Tick(World world)
 		{
+			if (!isAddedToScreenMap)
+			{
+				world.ScreenMap.Add(this, pos, anim.Image);
+				isAddedToScreenMap = true;
+			}
+
 			anim.Tick();
 
 			if (ticks == turn)

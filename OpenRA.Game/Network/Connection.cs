@@ -1,6 +1,6 @@
 #region Copyright & License Information
 /*
- * Copyright 2007-2017 The OpenRA Developers (see AUTHORS)
+ * Copyright 2007-2018 The OpenRA Developers (see AUTHORS)
  * This file is part of OpenRA, which is free software. It is made
  * available to you under the terms of the GNU General Public License
  * as published by the Free Software Foundation, either version 3 of
@@ -60,27 +60,27 @@ namespace OpenRA.Network
 		public virtual void Send(int frame, List<byte[]> orders)
 		{
 			var ms = new MemoryStream();
-			ms.Write(BitConverter.GetBytes(frame));
+			ms.WriteArray(BitConverter.GetBytes(frame));
 			foreach (var o in orders)
-				ms.Write(o);
+				ms.WriteArray(o);
 			Send(ms.ToArray());
 		}
 
 		public virtual void SendImmediate(List<byte[]> orders)
 		{
 			var ms = new MemoryStream();
-			ms.Write(BitConverter.GetBytes(0));
+			ms.WriteArray(BitConverter.GetBytes(0));
 			foreach (var o in orders)
-				ms.Write(o);
+				ms.WriteArray(o);
 			Send(ms.ToArray());
 		}
 
 		public virtual void SendSync(int frame, byte[] syncData)
 		{
-			var ms = new MemoryStream();
-			ms.Write(BitConverter.GetBytes(frame));
-			ms.Write(syncData);
-			Send(ms.ToArray());
+			var ms = new MemoryStream(4 + syncData.Length);
+			ms.WriteArray(BitConverter.GetBytes(frame));
+			ms.WriteArray(syncData);
+			Send(ms.GetBuffer());
 		}
 
 		protected virtual void Send(byte[] packet)
@@ -197,10 +197,10 @@ namespace OpenRA.Network
 
 		public override void SendSync(int frame, byte[] syncData)
 		{
-			var ms = new MemoryStream();
-			ms.Write(BitConverter.GetBytes(frame));
-			ms.Write(syncData);
-			queuedSyncPackets.Add(ms.ToArray());
+			var ms = new MemoryStream(4 + syncData.Length);
+			ms.WriteArray(BitConverter.GetBytes(frame));
+			ms.WriteArray(syncData);
+			queuedSyncPackets.Add(ms.GetBuffer());
 		}
 
 		protected override void Send(byte[] packet)
@@ -210,13 +210,13 @@ namespace OpenRA.Network
 			try
 			{
 				var ms = new MemoryStream();
-				ms.Write(BitConverter.GetBytes(packet.Length));
-				ms.Write(packet);
+				ms.WriteArray(BitConverter.GetBytes(packet.Length));
+				ms.WriteArray(packet);
 
 				foreach (var q in queuedSyncPackets)
 				{
-					ms.Write(BitConverter.GetBytes(q.Length));
-					ms.Write(q);
+					ms.WriteArray(BitConverter.GetBytes(q.Length));
+					ms.WriteArray(q);
 					base.Send(q);
 				}
 

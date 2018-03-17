@@ -1,6 +1,6 @@
 #region Copyright & License Information
 /*
- * Copyright 2007-2017 The OpenRA Developers (see AUTHORS)
+ * Copyright 2007-2018 The OpenRA Developers (see AUTHORS)
  * This file is part of OpenRA, which is free software. It is made
  * available to you under the terms of the GNU General Public License
  * as published by the Free Software Foundation, either version 3 of
@@ -40,12 +40,12 @@ namespace OpenRA.Mods.Common.Lint
 						.SelectMany(p => LintExts.GetPropertyValues(trait, p, emitError));
 
 					var fieldGranted = trait.GetType().GetFields()
-                        .Where(x => x.HasAttribute<GrantedConditionReferenceAttribute>())
-	  					.SelectMany(f => LintExts.GetFieldValues(trait, f, emitError));
+						.Where(x => x.HasAttribute<GrantedConditionReferenceAttribute>())
+						.SelectMany(f => LintExts.GetFieldValues(trait, f, emitError));
 
 					var propertyGranted = trait.GetType().GetProperties()
-                        .Where(x => x.HasAttribute<GrantedConditionReferenceAttribute>())
-	  					.SelectMany(f => LintExts.GetPropertyValues(trait, f, emitError));
+						.Where(x => x.HasAttribute<GrantedConditionReferenceAttribute>())
+						.SelectMany(f => LintExts.GetPropertyValues(trait, f, emitError));
 
 					foreach (var c in fieldConsumed.Concat(propertyConsumed))
 						if (!string.IsNullOrEmpty(c))

@@ -1,6 +1,6 @@
 #region Copyright & License Information
 /*
- * Copyright 2007-2017 The OpenRA Developers (see AUTHORS)
+ * Copyright 2007-2018 The OpenRA Developers (see AUTHORS)
  * This file is part of OpenRA, which is free software. It is made
  * available to you under the terms of the GNU General Public License
  * as published by the Free Software Foundation, either version 3 of
@@ -27,8 +27,8 @@ namespace OpenRA.Mods.Common.Traits.Render
 		Right = 8,
 	}
 
-	[Desc("Displays a custom UI overlay relative to the selection box.")]
-	public class WithDecorationInfo : ConditionalTraitInfo
+	[Desc("Displays a custom UI overlay relative to the actor's mouseover bounds.")]
+	public class WithDecorationInfo : ConditionalTraitInfo, Requires<IDecorationBoundsInfo>
 	{
 		[Desc("Image used for this decoration. Defaults to the actor's type.")]
 		public readonly string Image = null;
@@ -37,7 +37,10 @@ namespace OpenRA.Mods.Common.Traits.Render
 		public readonly string Sequence = null;
 
 		[Desc("Palette to render the sprite in. Reference the world actor's PaletteFrom* traits.")]
-		[PaletteReference] public readonly string Palette = "chrome";
+		[PaletteReference("IsPlayerPalette")] public readonly string Palette = "chrome";
+
+		[Desc("Custom palette is a player palette BaseName")]
+		public readonly bool IsPlayerPalette = false;
 
 		[Desc("Point in the actor's selection box used as reference for offsetting the decoration image. " +
 			"Possible values are combinations of Center, Top, Bottom, Left, Right.")]
@@ -58,7 +61,7 @@ namespace OpenRA.Mods.Common.Traits.Render
 	public class WithDecoration : ConditionalTrait<WithDecorationInfo>, ITick, IRenderAboveShroud, IRenderAboveShroudWhenSelected
 	{
 		protected readonly Animation Anim;
-
+		readonly IDecorationBounds[] decorationBounds;
 		readonly string image;
 
 		public WithDecoration(Actor self, WithDecorationInfo info)
@@ -67,6 +70,7 @@ namespace OpenRA.Mods.Common.Traits.Render
 			image = info.Image ?? self.Info.Name;
 			Anim = new Animation(self.World, image, () => self.World.Paused);
 			Anim.PlayRepeating(info.Sequence);
+			decorationBounds = self.TraitsImplementing<IDecorationBounds>().ToArray();
 		}
 
 		protected virtual bool ShouldRender(Actor self)
@@ -91,6 +95,9 @@ namespace OpenRA.Mods.Common.Traits.Render
 			return Info.RequiresSelection ? RenderInner(self, wr) : SpriteRenderable.None;
 		}
 
+		bool IRenderAboveShroud.SpatiallyPartitionable { get { return true; } }
+		bool IRenderAboveShroudWhenSelected.SpatiallyPartitionable { get { return true; } }
+
 		IEnumerable<IRenderable> RenderInner(Actor self, WorldRenderer wr)
 		{
 			if (IsTraitDisabled || self.IsDead || !self.IsInWorld || Anim == null)
@@ -99,7 +106,7 @@ namespace OpenRA.Mods.Common.Traits.Render
 			if (!ShouldRender(self) || self.World.FogObscures(self))
 				return Enumerable.Empty<IRenderable>();
 
-			var bounds = self.VisualBounds;
+			var bounds = decorationBounds.Select(b => b.DecorationBounds(self, wr)).FirstOrDefault(b => !b.IsEmpty);
 			var halfSize = (0.5f * Anim.Image.Size.XY).ToInt2();
 
 			var boundsOffset = new int2(bounds.Left + bounds.Right, bounds.Top + bounds.Bottom) / 2;
@@ -126,8 +133,11 @@ namespace OpenRA.Mods.Common.Traits.Render
 				sizeOffset -= new int2(halfSize.X, 0);
 			}
 
-			var pxPos = wr.Viewport.WorldToViewPx(wr.ScreenPxPosition(self.CenterPosition) + boundsOffset) + sizeOffset;
-			return new IRenderable[] { new UISpriteRenderable(Anim.Image, self.CenterPosition, pxPos, Info.ZOffset, wr.Palette(Info.Palette), 1f) };
+			var pxPos = wr.Viewport.WorldToViewPx(boundsOffset) + sizeOffset;
+			return new IRenderable[]
+			{
+				new UISpriteRenderable(Anim.Image, self.CenterPosition, pxPos, Info.ZOffset, wr.Palette(Info.Palette + (Info.IsPlayerPalette ? self.Owner.InternalName : "")), 1f)
+			};
 		}
 
 		void ITick.Tick(Actor self) { Anim.Tick(); }

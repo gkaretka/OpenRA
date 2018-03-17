@@ -1,6 +1,6 @@
 #region Copyright & License Information
 /*
- * Copyright 2007-2017 The OpenRA Developers (see AUTHORS)
+ * Copyright 2007-2018 The OpenRA Developers (see AUTHORS)
  * This file is part of OpenRA, which is free software. It is made
  * available to you under the terms of the GNU General Public License
  * as published by the Free Software Foundation, either version 3 of
@@ -23,8 +23,22 @@ namespace OpenRA.Mods.Common.Traits
 	{
 		public readonly string StartingUnitsClass = "none";
 
+		[Translate]
+		[Desc("Descriptive label for the starting units option in the lobby.")]
+		public readonly string DropdownLabel = "Starting Units";
+
+		[Translate]
+		[Desc("Tooltip description for the starting units option in the lobby.")]
+		public readonly string DropdownDescription = "Change the units that you start the game with";
+
 		[Desc("Prevent the starting units option from being changed in the lobby.")]
-		public bool Locked = false;
+		public readonly bool DropdownLocked = false;
+
+		[Desc("Whether to display the starting units option in the lobby.")]
+		public readonly bool DropdownVisible = true;
+
+		[Desc("Display order for the starting units option in the lobby.")]
+		public readonly int DropdownDisplayOrder = 0;
 
 		IEnumerable<LobbyOption> ILobbyOptions.LobbyOptions(Ruleset rules)
 		{
@@ -35,7 +49,8 @@ namespace OpenRA.Mods.Common.Traits
 				startingUnits[t.Class] = t.ClassName;
 
 			if (startingUnits.Any())
-				yield return new LobbyOption("startingunits", "Starting Units", new ReadOnlyDictionary<string, string>(startingUnits), StartingUnitsClass, Locked);
+				yield return new LobbyOption("startingunits", DropdownLabel, DropdownDescription, DropdownVisible, DropdownDisplayOrder,
+					new ReadOnlyDictionary<string, string>(startingUnits), StartingUnitsClass, DropdownLocked);
 		}
 
 		public object Create(ActorInitializer init) { return new SpawnMPUnits(this); }

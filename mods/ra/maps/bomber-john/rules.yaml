@@ -1,13 +1,15 @@
 World:
 	CrateSpawner:
-		Enabled: False
-		Locked: True
+		CheckboxEnabled: False
+		CheckboxLocked: True
 	-SpawnMPUnits:
 	MapBuildRadius:
-		AllyBuildRadiusLocked: True
-		AllyBuildRadiusEnabled: False
+		AllyBuildRadiusCheckboxLocked: True
+		AllyBuildRadiusCheckboxEnabled: False
+		BuildRadiusCheckboxLocked: True
+		BuildRadiusCheckboxEnabled: True
 	MapOptions:
-		TechLevelLocked: True
+		TechLevelDropdownLocked: True
 		TechLevel: unrestricted
 
 APWR:
@@ -56,27 +58,26 @@ SILO:
 
 Player:
 	Shroud:
-		FogLocked: True
-		FogEnabled: True
-		ExploredMapLocked: True
-		ExploredMapEnabled: False
+		FogCheckboxLocked: True
+		FogCheckboxEnabled: True
+		ExploredMapCheckboxLocked: True
+		ExploredMapCheckboxEnabled: False
 	PlayerResources:
 		DefaultCashLocked: True
 		DefaultCash: 60
 	ChronoshiftPower:
 		Icon: chrono
-		ChargeTime: 60
+		ChargeInterval: 1500
 		Description: Chronoshift
 		LongDesc: Teleport a group of vehicles across\nthe map.
 		SelectTargetSound: slcttgt1.aud
 		BeginChargeSound: chrochr1.aud
 		EndChargeSound: chrordy1.aud
-		Duration: 999999
 		KillCargo: yes
 		Range: 3
 	GrantExternalConditionPower@IRONCURTAIN:
 		Icon: invuln
-		ChargeTime: 30
+		ChargeInterval: 750
 		Description: Invulnerability
 		LongDesc: Makes a unit invulnerable\nfor 3 seconds.
 		Duration: 75
@@ -89,15 +90,18 @@ Player:
 		OnFireSound: ironcur9.aud
 	Production:
 		Produces: Building
+	LobbyPrerequisiteCheckbox@GLOBALBOUNTY:
+		Enabled: True
+		Locked: True
 
 MNLYR:
-	Inherits: ^Tank
+	Inherits: ^TrackedVehicle
 	Valued:
 		Cost: 800
 	Tooltip:
 		Name: Bomber
 	Health:
-		HP: 500
+		HP: 50000
 	Armor:
 		Type: Heavy
 	Mobile:
@@ -124,7 +128,7 @@ MNLYR:
 
 FTUR:
 	Health:
-		HP: 1000
+		HP: 100000
 	Transforms:
 		IntoActor: mnlyr
 		Offset: 0,0
@@ -141,7 +145,8 @@ MINVV:
 	HiddenUnderFog:
 	Building:
 		TerrainTypes: Clear,Road
-		Adjacent: -1
+		BuildSounds: placbldg.aud, build5.aud
+		UndeploySounds: cashturn.aud
 	Buildable:
 		Queue: Building
 		BuildPaletteOrder: 10
@@ -149,20 +154,21 @@ MINVV:
 	Valued:
 		Cost: 30
 	Health:
-		HP: 200
+		HP: 20000
 	RenderSprites:
 		Image: miner
 	WithSpriteBody:
 	Tooltip:
 		Name: Bomb
 	SelfHealing:
-		Step: -1
+		Step: -100
 		Delay: 1
 		HealIfBelow: 101
 	Explodes:
 		Weapon: CrateNuke
 		EmptyWeapon: CrateNuke
 	HitShape:
+	Interactable:
 
 T17:
 	-Health:

@@ -72,7 +72,8 @@ World:
 	BuildingInfluence:
 	ProductionQueueFromSelection:
 		ProductionPaletteWidget: PRODUCTION_PALETTE
-	WormManager:
+	ActorSpawnManager:
+		Actors: sandworm
 	CrateSpawner:
 		Minimum: 0
 		Maximum: 2
@@ -80,6 +81,7 @@ World:
 		WaterChance: 0
 		ValidGround: Sand, Rock, Transition, Spice, SpiceSand, Dune, Concrete
 		InitialSpawnDelay: 1500
+		CheckboxDisplayOrder: 1
 	DomainIndex:
 	WarheadDebugOverlay:
 	BuildableTerrainLayer:
@@ -95,9 +97,17 @@ World:
 		Sequence: sandcraters
 		SmokePercentage: 0
 	MapCreeps:
+		CheckboxLabel: Worms
+		CheckboxDescription: Worms roam the map and devour unprepared forces
+		CheckboxDisplayOrder: 5
 	SpawnMapActors:
 	MapBuildRadius:
+		AllyBuildRadiusCheckboxDisplayOrder: 4
+		BuildRadiusCheckboxVisible: False
 	MapOptions:
+		ShortGameCheckboxDisplayOrder: 2
+		TechLevelDropdownDisplayOrder: 2
+		GameSpeedDropdownDisplayOrder: 3
 	CreateMPPlayers:
 	MPStartLocations:
 	MPStartUnits@mcv:
@@ -154,11 +164,13 @@ World:
 		InnerSupportRadius: 3
 		OuterSupportRadius: 5
 	SpawnMPUnits:
+		DropdownDisplayOrder: 1
 	PathFinder:
 	ValidateOrder:
 	DebugPauseState:
 	RadarPings:
 	ObjectivesPanel:
+		ExitDelay: 0
 		PanelName: SKIRMISH_STATS
 	LoadWidgetAtGameStart:
 

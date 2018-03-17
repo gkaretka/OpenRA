@@ -1,6 +1,6 @@
 #region Copyright & License Information
 /*
- * Copyright 2007-2017 The OpenRA Developers (see AUTHORS)
+ * Copyright 2007-2018 The OpenRA Developers (see AUTHORS)
  * This file is part of OpenRA, which is free software. It is made
  * available to you under the terms of the GNU General Public License
  * as published by the Free Software Foundation, either version 3 of
@@ -15,8 +15,8 @@ namespace OpenRA.Mods.Common.Traits
 {
 	public abstract class SupportPowerInfo : PausableConditionalTraitInfo
 	{
-		[Desc("Measured in seconds.")]
-		public readonly int ChargeTime = 0;
+		[Desc("Measured in ticks.")]
+		public readonly int ChargeInterval = 0;
 		public readonly string Icon = null;
 		public readonly string Description = "";
 		public readonly string LongDesc = "";

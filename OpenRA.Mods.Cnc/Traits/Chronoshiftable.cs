@@ -1,6 +1,6 @@
 #region Copyright & License Information
 /*
- * Copyright 2007-2017 The OpenRA Developers (see AUTHORS)
+ * Copyright 2007-2018 The OpenRA Developers (see AUTHORS)
  * This file is part of OpenRA, which is free software. It is made
  * available to you under the terms of the GNU General Public License
  * as published by the Free Software Foundation, either version 3 of
@@ -9,6 +9,7 @@
  */
 #endregion
 
+using System.Collections.Generic;
 using System.Drawing;
 using OpenRA.Mods.Cnc.Activities;
 using OpenRA.Mods.Common.Traits;
@@ -22,6 +23,10 @@ namespace OpenRA.Mods.Cnc.Traits
 	{
 		[Desc("Should the actor die instead of being teleported?")]
 		public readonly bool ExplodeInstead = false;
+
+		[Desc("Types of damage that this trait causes to self when 'ExplodeInstead' is true. Leave empty for no damage types.")]
+		public readonly HashSet<string> DamageTypes = new HashSet<string>();
+
 		public readonly string ChronoshiftSound = "chrono2.aud";
 
 		[Desc("Should the actor return to its previous location after the chronoshift wore out?")]
@@ -95,14 +100,20 @@ namespace OpenRA.Mods.Cnc.Traits
 				{
 					// Damage is inflicted by the chronosphere
 					if (!self.Disposed)
-						self.InflictDamage(chronosphere, new Damage(int.MaxValue));
+						self.Kill(chronosphere, info.DamageTypes);
 				});
 				return true;
 			}
 
 			// Set up return-to-origin info
-			Origin = self.Location;
-			ReturnTicks = duration;
+			// If this actor is already counting down to return to
+			// an existing location then we shouldn't override it
+			if (ReturnTicks <= 0)
+			{
+				Origin = self.Location;
+				ReturnTicks = duration;
+			}
+
 			this.duration = duration;
 			this.chronosphere = chronosphere;
 			this.killCargo = killCargo;

@@ -1,6 +1,6 @@
 #region Copyright & License Information
 /*
- * Copyright 2007-2017 The OpenRA Developers (see AUTHORS)
+ * Copyright 2007-2018 The OpenRA Developers (see AUTHORS)
  * This file is part of OpenRA, which is free software. It is made
  * available to you under the terms of the GNU General Public License
  * as published by the Free Software Foundation, either version 3 of
@@ -8,6 +8,8 @@
  * information, see COPYING.
  */
 #endregion
+
+using OpenRA.Traits;
 
 namespace OpenRA.Mods.Common.AI
 {
@@ -32,7 +34,7 @@ namespace OpenRA.Mods.Common.AI
 
 			if (!owner.IsTargetValid)
 			{
-				owner.TargetActor = owner.Bot.FindClosestEnemy(owner.CenterPosition, WDist.FromCells(8));
+				owner.TargetActor = owner.Bot.FindClosestEnemy(owner.CenterPosition, WDist.FromCells(owner.Bot.Info.ProtectionScanRadius));
 
 				if (owner.TargetActor == null)
 				{
@@ -55,7 +57,7 @@ namespace OpenRA.Mods.Common.AI
 			else
 			{
 				foreach (var a in owner.Units)
-					owner.Bot.QueueOrder(new Order("AttackMove", a, false) { TargetLocation = owner.TargetActor.Location });
+					owner.Bot.QueueOrder(new Order("AttackMove", a, Target.FromCell(owner.World, owner.TargetActor.Location), false));
 			}
 		}
 

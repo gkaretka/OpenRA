@@ -1,6 +1,6 @@
 #region Copyright & License Information
 /*
- * Copyright 2007-2017 The OpenRA Developers (see AUTHORS)
+ * Copyright 2007-2018 The OpenRA Developers (see AUTHORS)
  * This file is part of OpenRA, which is free software. It is made
  * available to you under the terms of the GNU General Public License
  * as published by the Free Software Foundation, either version 3 of
@@ -180,13 +180,11 @@ namespace OpenRA.Network
 
 		public class LobbyOptionState
 		{
-			public bool Locked;
 			public string Value;
 			public string PreferredValue;
 
-			public LobbyOptionState() { }
-
-			public bool Enabled { get { return Value == "True"; } }
+			public bool IsLocked;
+			public bool IsEnabled { get { return Value == "True"; } }
 		}
 
 		public class Global
@@ -228,7 +226,7 @@ namespace OpenRA.Network
 			{
 				LobbyOptionState option;
 				if (LobbyOptions.TryGetValue(id, out option))
-					return option.Enabled;
+					return option.IsEnabled;
 
 				return def;
 			}

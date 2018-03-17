@@ -1,6 +1,6 @@
 #region Copyright & License Information
 /*
- * Copyright 2007-2017 The OpenRA Developers (see AUTHORS)
+ * Copyright 2007-2018 The OpenRA Developers (see AUTHORS)
  * This file is part of OpenRA, which is free software. It is made
  * available to you under the terms of the GNU General Public License
  * as published by the Free Software Foundation, either version 3 of
@@ -70,7 +70,7 @@ namespace OpenRA
 				try
 				{
 					// HACK: If the path is inside the the support directory then we may need to create it
-					if (name.StartsWith("^", StringComparison.Ordinal))
+					if (Platform.IsPathRelativeToSupportDirectory(name))
 					{
 						// Assume that the path is a directory if there is not an existing file with the same name
 						var resolved = Platform.ResolvePath(name);
@@ -117,6 +117,47 @@ namespace OpenRA
 						Console.WriteLine("Details: {0}", e);
 						Log.Write("debug", "Failed to load map: {0}", map);
 						Log.Write("debug", "Details: {0}", e);
+					}
+				}
+			}
+		}
+
+		public IEnumerable<Map> EnumerateMapsWithoutCaching(MapClassification classification = MapClassification.System)
+		{
+			// Utility mod that does not support maps
+			if (!modData.Manifest.Contains<MapGrid>())
+				yield break;
+
+			// Enumerate map directories
+			foreach (var kv in modData.Manifest.MapFolders)
+			{
+				MapClassification packageClassification;
+				if (!Enum.TryParse(kv.Value, out packageClassification))
+					continue;
+
+				if (!classification.HasFlag(packageClassification))
+					continue;
+
+				var name = kv.Key;
+				var optional = name.StartsWith("~", StringComparison.Ordinal);
+				if (optional)
+					name = name.Substring(1);
+
+				// Don't try to open the map directory in the support directory if it doesn't exist
+				if (Platform.IsPathRelativeToSupportDirectory(name))
+				{
+					var resolved = Platform.ResolvePath(name);
+					if (!Directory.Exists(resolved) || !File.Exists(resolved))
+						continue;
+				}
+
+				using (var package = (IReadWritePackage)modData.ModFiles.OpenPackage(name))
+				{
+					foreach (var map in package.Contents)
+					{
+						var mapPackage = package.OpenPackage(map, modData.ModFiles);
+						if (mapPackage != null)
+							yield return new Map(modData, mapPackage);
 					}
 				}
 			}

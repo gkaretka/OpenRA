@@ -1,6 +1,6 @@
 #region Copyright & License Information
 /*
- * Copyright 2007-2017 The OpenRA Developers (see AUTHORS)
+ * Copyright 2007-2018 The OpenRA Developers (see AUTHORS)
  * This file is part of OpenRA, which is free software. It is made
  * available to you under the terms of the GNU General Public License
  * as published by the Free Software Foundation, either version 3 of
@@ -20,7 +20,7 @@ namespace OpenRA.Mods.Common.Widgets
 		public readonly string TooltipContainer;
 		public readonly string TooltipTemplate = "BUTTON_TOOLTIP";
 
-		public NamedHotkey Key = new NamedHotkey();
+		public HotkeyReference Key = new HotkeyReference();
 		public bool DisableKeyRepeat = false;
 		public bool DisableKeySound = false;
 
@@ -130,7 +130,7 @@ namespace OpenRA.Mods.Common.Widgets
 
 		public override bool HandleKeyPress(KeyInput e)
 		{
-			if (Hotkey.FromKeyInput(e) != Key.GetValue() || e.Event != KeyInputEvent.Down || (DisableKeyRepeat && e.IsRepeat))
+			if (!Key.IsActivatedBy(e) || e.Event != KeyInputEvent.Down || (DisableKeyRepeat && e.IsRepeat))
 				return false;
 
 			if (!IsDisabled())
@@ -254,6 +254,9 @@ namespace OpenRA.Mods.Common.Widgets
 
 		public static void DrawBackground(string baseName, Rectangle rect, bool disabled, bool pressed, bool hover, bool highlighted)
 		{
+			if (string.IsNullOrEmpty(baseName))
+				return;
+
 			var variant = highlighted ? "-highlighted" : "";
 			var state = disabled ? "-disabled" :
 						pressed ? "-pressed" :

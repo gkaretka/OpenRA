@@ -1,6 +1,6 @@
 #region Copyright & License Information
 /*
- * Copyright 2007-2017 The OpenRA Developers (see AUTHORS)
+ * Copyright 2007-2018 The OpenRA Developers (see AUTHORS)
  * This file is part of OpenRA, which is free software. It is made
  * available to you under the terms of the GNU General Public License
  * as published by the Free Software Foundation, either version 3 of
@@ -24,6 +24,9 @@ namespace OpenRA.Mods.Cnc.Traits
 		public readonly WDist Speed = new WDist(426);
 
 		public readonly WAngle Angle = WAngle.FromDegrees(20);
+
+		[Desc("Types of damage that this trait causes. Leave empty for no damage types.")]
+		public readonly HashSet<string> DamageTypes = new HashSet<string>();
 
 		public override object Create(ActorInitializer init) { return new AttackLeap(init.Self, this); }
 	}
@@ -51,7 +54,7 @@ namespace OpenRA.Mods.Cnc.Traits
 				return;
 
 			self.CancelActivity();
-			self.QueueActivity(new Leap(self, target.Actor, a, info.Speed, info.Angle));
+			self.QueueActivity(new Leap(self, target.Actor, a, info.Speed, info.Angle, info.DamageTypes));
 		}
 	}
 }

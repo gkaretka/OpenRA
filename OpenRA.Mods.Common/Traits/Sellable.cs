@@ -1,6 +1,6 @@
 #region Copyright & License Information
 /*
- * Copyright 2007-2017 The OpenRA Developers (see AUTHORS)
+ * Copyright 2007-2018 The OpenRA Developers (see AUTHORS)
  * This file is part of OpenRA, which is free software. It is made
  * available to you under the terms of the GNU General Public License
  * as published by the Free Software Foundation, either version 3 of
@@ -22,9 +22,13 @@ namespace OpenRA.Mods.Common.Traits
 	{
 		public readonly int RefundPercent = 50;
 		public readonly string[] SellSounds = { };
+		public readonly bool ShowTicks = true;
 
 		[Desc("Skip playing (reversed) make animation.")]
 		public readonly bool SkipMakeAnimation = false;
+
+		[Desc("Cursor type to use when the sell order generator hovers over this actor.")]
+		public readonly string Cursor = "sell";
 
 		public override object Create(ActorInitializer init) { return new Sellable(init.Self, this); }
 	}
@@ -71,17 +75,17 @@ namespace OpenRA.Mods.Common.Traits
 				var makeAnimation = self.TraitOrDefault<WithMakeAnimation>();
 				if (makeAnimation != null)
 				{
-					makeAnimation.Reverse(self, new Sell(self), false);
+					makeAnimation.Reverse(self, new Sell(self, info.ShowTicks), false);
 					return;
 				}
 			}
 
-			self.QueueActivity(false, new Sell(self));
+			self.QueueActivity(false, new Sell(self, info.ShowTicks));
 		}
 
 		public bool IsTooltipVisible(Player forPlayer)
 		{
-			if (self.World.OrderGenerator is SellOrderGenerator)
+			if (!IsTraitDisabled && self.World.OrderGenerator is SellOrderGenerator)
 				return forPlayer == self.Owner;
 			return false;
 		}
@@ -90,14 +94,14 @@ namespace OpenRA.Mods.Common.Traits
 		{
 			get
 			{
-				var sellValue = self.GetSellValue() * info.RefundPercent / 100;
-				if (health.Value != null)
-				{
-					sellValue *= health.Value.HP;
-					sellValue /= health.Value.MaxHP;
-				}
+				var sellValue = self.GetSellValue();
 
-				return "Refund: $" + sellValue;
+				// Cast to long to avoid overflow when multiplying by the health
+				var hp = health != null ? (long)health.Value.HP : 1L;
+				var maxHP = health != null ? (long)health.Value.MaxHP : 1L;
+				var refund = (int)((sellValue * info.RefundPercent * hp) / (100 * maxHP));
+
+				return "Refund: $" + refund;
 			}
 		}
 	}

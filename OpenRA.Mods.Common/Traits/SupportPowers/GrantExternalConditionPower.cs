@@ -1,6 +1,6 @@
 #region Copyright & License Information
 /*
- * Copyright 2007-2017 The OpenRA Developers (see AUTHORS)
+ * Copyright 2007-2018 The OpenRA Developers (see AUTHORS)
  * This file is part of OpenRA, which is free software. It is made
  * available to you under the terms of the GNU General Public License
  * as published by the Free Software Foundation, either version 3 of
@@ -37,6 +37,9 @@ namespace OpenRA.Mods.Common.Traits
 		[SequenceReference, Desc("Sequence to play for granting actor when activated.",
 			"This requires the actor to have the WithSpriteBody trait or one of its derivatives.")]
 		public readonly string Sequence = "active";
+
+		[Desc("Cursor to display when there are no units to apply the condition in range.")]
+		public readonly string BlockedCursor = "move-blocked";
 
 		public override object Create(ActorInitializer init) { return new GrantExternalConditionPower(init.Self, this); }
 	}
@@ -120,7 +123,7 @@ namespace OpenRA.Mods.Common.Traits
 			{
 				world.CancelInputMode();
 				if (mi.Button == MouseButton.Left && power.UnitsInRange(cell).Any())
-					yield return new Order(order, manager.Self, false) { TargetLocation = cell, SuppressVisualFeedback = true };
+					yield return new Order(order, manager.Self, Target.FromCell(world, cell), false) { SuppressVisualFeedback = true };
 			}
 
 			public void Tick(World world)
@@ -134,7 +137,12 @@ namespace OpenRA.Mods.Common.Traits
 			{
 				var xy = wr.Viewport.ViewToWorld(Viewport.LastMousePos);
 				foreach (var unit in power.UnitsInRange(xy))
-					yield return new SelectionBoxRenderable(unit, Color.Red);
+				{
+					var bounds = unit.TraitsImplementing<IDecorationBounds>()
+						.Select(b => b.DecorationBounds(unit, wr))
+						.FirstOrDefault(b => !b.IsEmpty);
+					yield return new SelectionBoxRenderable(unit, bounds, Color.Red);
+				}
 			}
 
 			public IEnumerable<IRenderable> Render(WorldRenderer wr, World world)
@@ -148,7 +156,7 @@ namespace OpenRA.Mods.Common.Traits
 
 			public string GetCursor(World world, CPos cell, int2 worldPixel, MouseInput mi)
 			{
-				return power.UnitsInRange(cell).Any() ? "ability" : "move-blocked";
+				return power.UnitsInRange(cell).Any() ? power.info.Cursor : power.info.BlockedCursor;
 			}
 		}
 	}

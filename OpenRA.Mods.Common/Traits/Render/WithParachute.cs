@@ -1,6 +1,6 @@
 #region Copyright & License Information
 /*
- * Copyright 2007-2017 The OpenRA Developers (see AUTHORS)
+ * Copyright 2007-2018 The OpenRA Developers (see AUTHORS)
  * This file is part of OpenRA, which is free software. It is made
  * available to you under the terms of the GNU General Public License
  * as published by the Free Software Foundation, either version 3 of
@@ -11,6 +11,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using OpenRA.Graphics;
 using OpenRA.Mods.Common.Graphics;
@@ -154,7 +155,7 @@ namespace OpenRA.Mods.Common.Traits.Render
 				shadow.Tick();
 		}
 
-		public IEnumerable<IRenderable> Render(Actor self, WorldRenderer wr)
+		IEnumerable<IRenderable> IRender.Render(Actor self, WorldRenderer wr)
 		{
 			if (info.ShadowImage == null)
 				return Enumerable.Empty<IRenderable>();
@@ -169,6 +170,22 @@ namespace OpenRA.Mods.Common.Traits.Render
 			var pos = self.CenterPosition - new WVec(0, 0, dat.Length);
 			var palette = wr.Palette(info.ShadowPalette);
 			return new IRenderable[] { new SpriteRenderable(shadow.Image, pos, info.ShadowOffset, info.ShadowZOffset, palette, 1, true) };
+		}
+
+		IEnumerable<Rectangle> IRender.ScreenBounds(Actor self, WorldRenderer wr)
+		{
+			if (info.ShadowImage == null)
+				return Enumerable.Empty<Rectangle>();
+
+			if (IsTraitDisabled || self.IsDead || !self.IsInWorld)
+				return Enumerable.Empty<Rectangle>();
+
+			if (self.World.FogObscures(self))
+				return Enumerable.Empty<Rectangle>();
+
+			var dat = self.World.Map.DistanceAboveTerrain(self.CenterPosition);
+			var pos = self.CenterPosition - new WVec(0, 0, dat.Length);
+			return new Rectangle[] { shadow.ScreenBounds(wr, pos, info.ShadowOffset, 1) };
 		}
 	}
 }

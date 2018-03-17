@@ -1,6 +1,6 @@
 #region Copyright & License Information
 /*
- * Copyright 2007-2017 The OpenRA Developers (see AUTHORS)
+ * Copyright 2007-2018 The OpenRA Developers (see AUTHORS)
  * This file is part of OpenRA, which is free software. It is made
  * available to you under the terms of the GNU General Public License
  * as published by the Free Software Foundation, either version 3 of
@@ -43,9 +43,11 @@ namespace OpenRA.Mods.Common.Traits
 
 		protected override void TraitEnabled(Actor self) { PlayerPower.UpdateActor(self); }
 		protected override void TraitDisabled(Actor self) { PlayerPower.UpdateActor(self); }
-		public void AddedToWorld(Actor self) { PlayerPower.UpdateActor(self); }
-		public void RemovedFromWorld(Actor self) { PlayerPower.RemoveActor(self); }
-		public void OnOwnerChanged(Actor self, Player oldOwner, Player newOwner)
+
+		void INotifyAddedToWorld.AddedToWorld(Actor self) { PlayerPower.UpdateActor(self); }
+		void INotifyRemovedFromWorld.RemovedFromWorld(Actor self) { PlayerPower.RemoveActor(self); }
+
+		void INotifyOwnerChanged.OnOwnerChanged(Actor self, Player oldOwner, Player newOwner)
 		{
 			PlayerPower.RemoveActor(self);
 			PlayerPower = newOwner.PlayerActor.Trait<PowerManager>();

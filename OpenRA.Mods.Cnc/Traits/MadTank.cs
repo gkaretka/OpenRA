@@ -1,6 +1,6 @@
 #region Copyright & License Information
 /*
- * Copyright 2007-2017 The OpenRA Developers (see AUTHORS)
+ * Copyright 2007-2018 The OpenRA Developers (see AUTHORS)
  * This file is part of OpenRA, which is free software. It is made
  * available to you under the terms of the GNU General Public License
  * as published by the Free Software Foundation, either version 3 of
@@ -53,11 +53,25 @@ namespace OpenRA.Mods.Cnc.Traits
 		public WeaponInfo ThumpDamageWeaponInfo { get; private set; }
 		public WeaponInfo DetonationWeaponInfo { get; private set; }
 
+		[Desc("Types of damage that this trait causes to self while self-destructing. Leave empty for no damage types.")]
+		public readonly HashSet<string> DamageTypes = new HashSet<string>();
+
 		public object Create(ActorInitializer init) { return new MadTank(init.Self, this); }
 		public void RulesetLoaded(Ruleset rules, ActorInfo ai)
 		{
-			ThumpDamageWeaponInfo = rules.Weapons[ThumpDamageWeapon.ToLowerInvariant()];
-			DetonationWeaponInfo = rules.Weapons[DetonationWeapon.ToLowerInvariant()];
+			WeaponInfo thumpDamageWeapon;
+			WeaponInfo detonationWeapon;
+			var thumpDamageWeaponToLower = (ThumpDamageWeapon ?? string.Empty).ToLowerInvariant();
+			var detonationWeaponToLower = (DetonationWeapon ?? string.Empty).ToLowerInvariant();
+
+			if (!rules.Weapons.TryGetValue(thumpDamageWeaponToLower, out thumpDamageWeapon))
+				throw new YamlException("Weapons Ruleset does not contain an entry '{0}'".F(thumpDamageWeaponToLower));
+
+			if (!rules.Weapons.TryGetValue(detonationWeaponToLower, out detonationWeapon))
+				throw new YamlException("Weapons Ruleset does not contain an entry '{0}'".F(detonationWeaponToLower));
+
+			ThumpDamageWeaponInfo = thumpDamageWeapon;
+			DetonationWeaponInfo = detonationWeapon;
 		}
 	}
 
@@ -110,16 +124,15 @@ namespace OpenRA.Mods.Cnc.Traits
 			if (order.OrderID != "DetonateAttack" && order.OrderID != "Detonate")
 				return null;
 
-			if (target.Type == TargetType.FrozenActor)
-				return new Order(order.OrderID, self, queued) { ExtraData = target.FrozenActor.ID };
-
-			return new Order(order.OrderID, self, queued) { TargetActor = target.Actor };
+			return new Order(order.OrderID, self, target, queued);
 		}
 
 		Order IIssueDeployOrder.IssueDeployOrder(Actor self)
 		{
 			return new Order("Detonate", self, false);
 		}
+
+		bool IIssueDeployOrder.CanIssueDeployOrder(Actor self) { return true; }
 
 		string IOrderVoice.VoicePhraseForOrder(Actor self, Order order)
 		{
@@ -136,7 +149,7 @@ namespace OpenRA.Mods.Cnc.Traits
 					info.DetonationWeaponInfo.Impact(Target.FromPos(self.CenterPosition), self, Enumerable.Empty<int>());
 				}
 
-				self.Kill(self);
+				self.Kill(self, info.DamageTypes);
 			});
 		}
 

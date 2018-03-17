@@ -1,6 +1,6 @@
 #region Copyright & License Information
 /*
- * Copyright 2007-2017 The OpenRA Developers (see AUTHORS)
+ * Copyright 2007-2018 The OpenRA Developers (see AUTHORS)
  * This file is part of OpenRA, which is free software. It is made
  * available to you under the terms of the GNU General Public License
  * as published by the Free Software Foundation, either version 3 of
@@ -184,6 +184,7 @@ namespace OpenRA.Mods.Common.Server
 						{
 							client.Slot = null;
 							client.SpawnPoint = 0;
+							client.Team = 0;
 							client.Color = HSLColor.FromRGB(255, 255, 255);
 							server.SyncLobbyClients();
 							CheckAutoStart(server);
@@ -398,7 +399,7 @@ namespace OpenRA.Mods.Common.Server
 
 							// Validate if color is allowed and get an alternative if it isn't
 							foreach (var c in server.LobbyInfo.Clients)
-								if (c.Slot == null || (c.Slot != null && !server.LobbyInfo.Slots[c.Slot].LockColor))
+								if (c.Slot != null && !server.LobbyInfo.Slots[c.Slot].LockColor)
 									c.Color = c.PreferredColor = SanitizePlayerColor(server, c.Color, c.Index, conn);
 
 							server.SyncLobbyInfo();
@@ -463,7 +464,7 @@ namespace OpenRA.Mods.Common.Server
 							return true;
 						}
 
-						if (option.Locked)
+						if (option.IsLocked)
 						{
 							server.SendOrderTo(conn, "Message", "{0} cannot be changed.".F(option.Name));
 							return true;
@@ -806,7 +807,7 @@ namespace OpenRA.Mods.Common.Server
 				if (gs.LobbyOptions.TryGetValue(o.Id, out state))
 				{
 					// Propagate old state on map change
-					if (!o.Locked)
+					if (!o.IsLocked)
 					{
 						if (o.Values.Keys.Contains(state.PreferredValue))
 							value = state.PreferredValue;
@@ -819,7 +820,7 @@ namespace OpenRA.Mods.Common.Server
 				else
 					state = new Session.LobbyOptionState();
 
-				state.Locked = o.Locked;
+				state.IsLocked = o.IsLocked;
 				state.Value = value;
 				state.PreferredValue = preferredValue;
 				gs.LobbyOptions[o.Id] = state;
@@ -866,7 +867,7 @@ namespace OpenRA.Mods.Common.Server
 			var client = server.GetClient(conn);
 
 			// Validate whether color is allowed and get an alternative if it isn't
-			if (client.Slot == null || !server.LobbyInfo.Slots[client.Slot].LockColor)
+			if (client.Slot != null && !server.LobbyInfo.Slots[client.Slot].LockColor)
 				client.Color = SanitizePlayerColor(server, client.Color, client.Index);
 
 			// Report any custom map details

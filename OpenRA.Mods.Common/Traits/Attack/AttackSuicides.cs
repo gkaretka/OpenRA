@@ -1,6 +1,6 @@
 #region Copyright & License Information
 /*
- * Copyright 2007-2017 The OpenRA Developers (see AUTHORS)
+ * Copyright 2007-2018 The OpenRA Developers (see AUTHORS)
  * This file is part of OpenRA, which is free software. It is made
  * available to you under the terms of the GNU General Public License
  * as published by the Free Software Foundation, either version 3 of
@@ -18,21 +18,23 @@ using OpenRA.Traits;
 namespace OpenRA.Mods.Common.Traits
 {
 	[Desc("Does a suicide attack where it moves next to the target when used in combination with `Explodes`.")]
-	class AttackSuicidesInfo : ITraitInfo, Requires<IMoveInfo>
+	class AttackSuicidesInfo : ConditionalTraitInfo, Requires<IMoveInfo>
 	{
+		[Desc("Types of damage that this trait causes to self while suiciding. Leave empty for no damage types.")]
+		public readonly HashSet<string> DamageTypes = new HashSet<string>();
+
 		[VoiceReference] public readonly string Voice = "Action";
 
-		public object Create(ActorInitializer init) { return new AttackSuicides(init.Self, this); }
+		public override object Create(ActorInitializer init) { return new AttackSuicides(init.Self, this); }
 	}
 
-	class AttackSuicides : IIssueOrder, IResolveOrder, IOrderVoice, IIssueDeployOrder
+	class AttackSuicides : ConditionalTrait<AttackSuicidesInfo>, IIssueOrder, IResolveOrder, IOrderVoice, IIssueDeployOrder
 	{
-		readonly AttackSuicidesInfo info;
 		readonly IMove move;
 
 		public AttackSuicides(Actor self, AttackSuicidesInfo info)
+			: base(info)
 		{
-			this.info = info;
 			move = self.Trait<IMove>();
 		}
 
@@ -40,6 +42,9 @@ namespace OpenRA.Mods.Common.Traits
 		{
 			get
 			{
+				if (IsTraitDisabled)
+					yield break;
+
 				yield return new TargetTypeOrderTargeter(new HashSet<string> { "DetonateAttack" }, "DetonateAttack", 5, "attack", true, false) { ForceAttack = false };
 				yield return new DeployOrderTargeter("Detonate", 5);
 			}
@@ -50,10 +55,7 @@ namespace OpenRA.Mods.Common.Traits
 			if (order.OrderID != "DetonateAttack" && order.OrderID != "Detonate")
 				return null;
 
-			if (target.Type == TargetType.FrozenActor)
-				return new Order(order.OrderID, self, queued) { ExtraData = target.FrozenActor.ID };
-
-			return new Order(order.OrderID, self, queued) { TargetActor = target.Actor };
+			return new Order(order.OrderID, self, target, queued);
 		}
 
 		Order IIssueDeployOrder.IssueDeployOrder(Actor self)
@@ -61,9 +63,11 @@ namespace OpenRA.Mods.Common.Traits
 			return new Order("Detonate", self, false);
 		}
 
+		bool IIssueDeployOrder.CanIssueDeployOrder(Actor self) { return true; }
+
 		public string VoicePhraseForOrder(Actor self, Order order)
 		{
-			return info.Voice;
+			return Info.Voice;
 		}
 
 		public void ResolveOrder(Actor self, Order order)
@@ -81,10 +85,10 @@ namespace OpenRA.Mods.Common.Traits
 
 				self.QueueActivity(move.MoveToTarget(self, target));
 
-				self.QueueActivity(new CallFunc(() => self.Kill(self)));
+				self.QueueActivity(new CallFunc(() => self.Kill(self, Info.DamageTypes)));
 			}
 			else if (order.OrderString == "Detonate")
-				self.Kill(self);
+				self.Kill(self, Info.DamageTypes);
 		}
 	}
 }

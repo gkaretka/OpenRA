@@ -1,6 +1,6 @@
 #region Copyright & License Information
 /*
- * Copyright 2007-2017 The OpenRA Developers (see AUTHORS)
+ * Copyright 2007-2018 The OpenRA Developers (see AUTHORS)
  * This file is part of OpenRA, which is free software. It is made
  * available to you under the terms of the GNU General Public License
  * as published by the Free Software Foundation, either version 3 of
@@ -26,7 +26,7 @@ namespace OpenRA.Mods.Common.Traits
 	}
 
 	[Desc("Used together with ClassicProductionQueue.")]
-	public class PrimaryBuildingInfo : ITraitInfo
+	public class PrimaryBuildingInfo : ConditionalTraitInfo
 	{
 		[GrantedConditionReference]
 		[Desc("The condition to grant to self while this is the primary building.")]
@@ -35,23 +35,24 @@ namespace OpenRA.Mods.Common.Traits
 		[Desc("The speech notification to play when selecting a primary building.")]
 		public readonly string SelectionNotification = "PrimaryBuildingSelected";
 
-		public object Create(ActorInitializer init) { return new PrimaryBuilding(init.Self, this); }
+		[Desc("List of production queues for which the primary flag should be set.",
+			"If empty, the list given in the `Produces` property of the `Production` trait will be used.")]
+		public readonly string[] ProductionQueues = { };
+
+		public override object Create(ActorInitializer init) { return new PrimaryBuilding(init.Self, this); }
 	}
 
-	public class PrimaryBuilding : INotifyCreated, IIssueOrder, IResolveOrder
+	public class PrimaryBuilding : ConditionalTrait<PrimaryBuildingInfo>, INotifyCreated, IIssueOrder, IResolveOrder
 	{
 		const string OrderID = "PrimaryProducer";
 
-		readonly PrimaryBuildingInfo info;
 		ConditionManager conditionManager;
 		int primaryToken = ConditionManager.InvalidConditionToken;
 
 		public bool IsPrimary { get; private set; }
 
 		public PrimaryBuilding(Actor self, PrimaryBuildingInfo info)
-		{
-			this.info = info;
-		}
+			: base(info) { }
 
 		void INotifyCreated.Created(Actor self)
 		{
@@ -60,7 +61,13 @@ namespace OpenRA.Mods.Common.Traits
 
 		IEnumerable<IOrderTargeter> IIssueOrder.Orders
 		{
-			get { yield return new DeployOrderTargeter(OrderID, 1); }
+			get
+			{
+				if (IsTraitDisabled)
+					yield break;
+
+				yield return new DeployOrderTargeter(OrderID, 1);
+			}
 		}
 
 		Order IIssueOrder.IssueOrder(Actor self, IOrderTargeter order, Target target, bool queued)
@@ -86,7 +93,8 @@ namespace OpenRA.Mods.Common.Traits
 			{
 				// Cancel existing primaries
 				// TODO: THIS IS SHIT
-				foreach (var p in self.Info.TraitInfo<ProductionInfo>().Produces)
+				var queues = Info.ProductionQueues.Length == 0 ? self.Info.TraitInfos<ProductionInfo>().SelectMany(pi => pi.Produces) : Info.ProductionQueues;
+				foreach (var q in queues)
 				{
 					foreach (var b in self.World
 							.ActorsWithTrait<PrimaryBuilding>()
@@ -94,17 +102,25 @@ namespace OpenRA.Mods.Common.Traits
 								a.Actor != self &&
 								a.Actor.Owner == self.Owner &&
 								a.Trait.IsPrimary &&
-								a.Actor.Info.TraitInfo<ProductionInfo>().Produces.Contains(p)))
+								a.Actor.Info.TraitInfos<ProductionInfo>().Any(pi => pi.Produces.Contains(q))))
 						b.Trait.SetPrimaryProducer(b.Actor, false);
 				}
 
-				if (conditionManager != null && primaryToken == ConditionManager.InvalidConditionToken && !string.IsNullOrEmpty(info.PrimaryCondition))
-					primaryToken = conditionManager.GrantCondition(self, info.PrimaryCondition);
+				if (conditionManager != null && primaryToken == ConditionManager.InvalidConditionToken && !string.IsNullOrEmpty(Info.PrimaryCondition))
+					primaryToken = conditionManager.GrantCondition(self, Info.PrimaryCondition);
 
-				Game.Sound.PlayNotification(self.World.Map.Rules, self.Owner, "Speech", info.SelectionNotification, self.Owner.Faction.InternalName);
+				Game.Sound.PlayNotification(self.World.Map.Rules, self.Owner, "Speech", Info.SelectionNotification, self.Owner.Faction.InternalName);
 			}
 			else if (primaryToken != ConditionManager.InvalidConditionToken)
 				primaryToken = conditionManager.RevokeCondition(self, primaryToken);
+		}
+
+		protected override void TraitEnabled(Actor self) { }
+
+		protected override void TraitDisabled(Actor self)
+		{
+			if (IsPrimary)
+				SetPrimaryProducer(self, !IsPrimary);
 		}
 	}
 }

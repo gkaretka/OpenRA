@@ -1,6 +1,6 @@
 #region Copyright & License Information
 /*
- * Copyright 2007-2017 The OpenRA Developers (see AUTHORS)
+ * Copyright 2007-2018 The OpenRA Developers (see AUTHORS)
  * This file is part of OpenRA, which is free software. It is made
  * available to you under the terms of the GNU General Public License
  * as published by the Free Software Foundation, either version 3 of
@@ -77,7 +77,7 @@ namespace OpenRA
 			set { renderPlayer = value; }
 		}
 
-		public bool FogObscures(Actor a) { return RenderPlayer != null && !RenderPlayer.CanViewActor(a); }
+		public bool FogObscures(Actor a) { return RenderPlayer != null && !a.CanBeViewedByPlayer(RenderPlayer); }
 		public bool FogObscures(CPos p) { return RenderPlayer != null && !RenderPlayer.Shroud.IsVisible(p); }
 		public bool FogObscures(WPos pos) { return RenderPlayer != null && !RenderPlayer.Shroud.IsVisible(pos); }
 		public bool ShroudObscures(CPos p) { return RenderPlayer != null && !RenderPlayer.Shroud.IsExplored(p); }
@@ -191,9 +191,7 @@ namespace OpenRA
 		{
 			ActorMap.AddInfluence(self, ios);
 			ActorMap.AddPosition(self, ios);
-
-			if (!self.Bounds.Size.IsEmpty)
-				ScreenMap.Add(self);
+			ScreenMap.AddOrUpdate(self);
 		}
 
 		public void UpdateMaps(Actor self, IOccupySpace ios)
@@ -201,9 +199,7 @@ namespace OpenRA
 			if (!self.IsInWorld)
 				return;
 
-			if (!self.Bounds.Size.IsEmpty)
-				ScreenMap.Update(self);
-
+			ScreenMap.AddOrUpdate(self);
 			ActorMap.UpdatePosition(self, ios);
 		}
 
@@ -211,9 +207,7 @@ namespace OpenRA
 		{
 			ActorMap.RemoveInfluence(self, ios);
 			ActorMap.RemovePosition(self, ios);
-
-			if (!self.Bounds.Size.IsEmpty)
-				ScreenMap.Remove(self);
+			ScreenMap.Remove(self);
 		}
 
 		public void LoadComplete(WorldRenderer wr)
@@ -369,6 +363,7 @@ namespace OpenRA
 		public void TickRender(WorldRenderer wr)
 		{
 			ActorsWithTrait<ITickRender>().DoTimed(x => x.Trait.TickRender(wr, x.Actor), "Render");
+			ScreenMap.TickRender();
 		}
 
 		public IEnumerable<Actor> Actors { get { return actors.Values; } }
@@ -404,7 +399,7 @@ namespace OpenRA
 				// Hash fields marked with the ISync interface.
 				foreach (var actor in ActorsHavingTrait<ISync>())
 					foreach (var syncHash in actor.SyncHashes)
-						ret += n++ * (int)(1 + actor.ActorID) * syncHash.Hash;
+						ret += n++ * (int)(1 + actor.ActorID) * syncHash.Hash();
 
 				// Hash game state relevant effects such as projectiles.
 				foreach (var sync in SyncedEffects)
@@ -480,6 +475,6 @@ namespace OpenRA
 		public bool Equals(TraitPair<T> other) { return this == other; }
 		public override bool Equals(object obj) { return obj is TraitPair<T> && Equals((TraitPair<T>)obj); }
 
-		public override string ToString() { return "{0}->{1}".F(Actor.Info.Name, Trait.GetType().Name); }
+		public override string ToString() { return Actor.Info.Name + "->" + Trait.GetType().Name; }
 	}
 }

@@ -1,6 +1,6 @@
 #region Copyright & License Information
 /*
- * Copyright 2007-2017 The OpenRA Developers (see AUTHORS)
+ * Copyright 2007-2018 The OpenRA Developers (see AUTHORS)
  * This file is part of OpenRA, which is free software. It is made
  * available to you under the terms of the GNU General Public License
  * as published by the Free Software Foundation, either version 3 of
@@ -494,14 +494,30 @@ namespace OpenRA
 			return long.TryParse(s, NumberStyles.Integer, NumberFormatInfo.InvariantInfo, out i);
 		}
 
-		public static bool IsTraitEnabled(this object trait)
+		public static bool IsTraitEnabled<T>(this T trait)
 		{
-			return trait as IDisabledTrait == null || !(trait as IDisabledTrait).IsTraitDisabled;
+			var disabledTrait = trait as IDisabledTrait;
+			return disabledTrait == null || !disabledTrait.IsTraitDisabled;
 		}
 
-		public static bool IsTraitEnabled<T>(T t)
+		public static T FirstEnabledTraitOrDefault<T>(this IEnumerable<T> ts)
 		{
-			return IsTraitEnabled(t as object);
+			// PERF: Avoid LINQ.
+			foreach (var t in ts)
+				if (t.IsTraitEnabled())
+					return t;
+
+			return default(T);
+		}
+
+		public static T FirstEnabledTraitOrDefault<T>(this T[] ts)
+		{
+			// PERF: Avoid LINQ.
+			foreach (var t in ts)
+				if (t.IsTraitEnabled())
+					return t;
+
+			return default(T);
 		}
 	}
 

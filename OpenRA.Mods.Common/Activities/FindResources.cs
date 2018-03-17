@@ -1,6 +1,6 @@
 #region Copyright & License Information
 /*
- * Copyright 2007-2017 The OpenRA Developers (see AUTHORS)
+ * Copyright 2007-2018 The OpenRA Developers (see AUTHORS)
  * This file is part of OpenRA, which is free software. It is made
  * available to you under the terms of the GNU General Public License
  * as published by the Free Software Foundation, either version 3 of
@@ -69,6 +69,8 @@ namespace OpenRA.Mods.Common.Activities
 				if (!harv.IsEmpty)
 					return deliver;
 
+				harv.LastSearchFailed = true;
+
 				var unblockCell = harv.LastHarvestedCell ?? (self.Location + harvInfo.UnblockCell);
 				var moveTo = mobile.NearestMoveableCell(unblockCell, 2, 5);
 				self.QueueActivity(mobile.MoveTo(moveTo, 1));
@@ -91,6 +93,8 @@ namespace OpenRA.Mods.Common.Activities
 				// Attempt to claim the target cell
 				if (!claimLayer.TryClaimCell(self, closestHarvestablePosition.Value))
 					return ActivityUtils.SequenceActivities(new Wait(25), this);
+
+				harv.LastSearchFailed = false;
 
 				// If not given a direct order, assume ordered to the first resource location we find:
 				if (!harv.LastOrderLocation.HasValue)
@@ -117,7 +121,7 @@ namespace OpenRA.Mods.Common.Activities
 				return self.Location;
 
 			// Determine where to search from and how far to search:
-			var searchFromLoc = harv.LastOrderLocation ?? (harv.LastLinkedProc ?? harv.LinkedProc ?? self).Location;
+			var searchFromLoc = GetSearchFromLocation(self);
 			var searchRadius = harv.LastOrderLocation.HasValue ? harvInfo.SearchFromOrderRadius : harvInfo.SearchFromProcRadius;
 			var searchRadiusSquared = searchRadius * searchRadius;
 
@@ -147,6 +151,17 @@ namespace OpenRA.Mods.Common.Activities
 		public override IEnumerable<Target> GetTargets(Actor self)
 		{
 			yield return Target.FromCell(self.World, self.Location);
+		}
+
+		CPos GetSearchFromLocation(Actor self)
+		{
+			if (harv.LastOrderLocation.HasValue)
+				return harv.LastOrderLocation.Value;
+			else if (harv.LastLinkedProc != null)
+				return harv.LastLinkedProc.Location + harv.LastLinkedProc.Trait<IAcceptResources>().DeliveryOffset;
+			else if (harv.LinkedProc != null)
+				return harv.LinkedProc.Location + harv.LinkedProc.Trait<IAcceptResources>().DeliveryOffset;
+			return self.Location;
 		}
 	}
 }

@@ -1,6 +1,6 @@
 #region Copyright & License Information
 /*
- * Copyright 2007-2017 The OpenRA Developers (see AUTHORS)
+ * Copyright 2007-2018 The OpenRA Developers (see AUTHORS)
  * This file is part of OpenRA, which is free software. It is made
  * available to you under the terms of the GNU General Public License
  * as published by the Free Software Foundation, either version 3 of
@@ -134,8 +134,7 @@ namespace OpenRA.Server
 
 			randomSeed = (int)DateTime.Now.ToBinary();
 
-			// UPnP is only supported for servers created by the game client.
-			if (!dedicated && Settings.AllowPortForward)
+			if (UPnP.Status == UPnPStatus.Enabled)
 				UPnP.ForwardPort(Settings.ListenPort, Settings.ExternalPort).Wait();
 
 			foreach (var trait in modData.Manifest.ServerTraits)
@@ -206,7 +205,7 @@ namespace OpenRA.Server
 					if (State == ServerState.ShuttingDown)
 					{
 						EndGame();
-						if (!dedicated && Settings.AllowPortForward)
+						if (UPnP.Status == UPnPStatus.Enabled)
 							UPnP.RemovePortForward().Wait();
 						break;
 					}
@@ -361,6 +360,8 @@ namespace OpenRA.Server
 				PreConns.Remove(newConn);
 				Conns.Add(newConn);
 				LobbyInfo.Clients.Add(client);
+				newConn.Validated = true;
+
 				var clientPing = new Session.ClientPing { Index = client.Index };
 				LobbyInfo.ClientPings.Add(clientPing);
 
@@ -383,7 +384,7 @@ namespace OpenRA.Server
 
 				if (Dedicated)
 				{
-					var motdFile = Platform.ResolvePath("^", "motd.txt");
+					var motdFile = Platform.ResolvePath(Platform.SupportDirPrefix, "motd.txt");
 					if (!File.Exists(motdFile))
 						File.WriteAllText(motdFile, "Welcome, have fun and good luck!");
 
@@ -477,6 +478,23 @@ namespace OpenRA.Server
 
 		void InterpretServerOrder(Connection conn, ServerOrder so)
 		{
+			// Only accept handshake responses from unvalidated clients
+			// Anything else may be an attempt to exploit the server
+			if (!conn.Validated)
+			{
+				if (so.Name == "HandshakeResponse")
+					ValidateClient(conn, so.Data);
+				else
+				{
+					Log.Write("server", "Rejected connection from {0}; Order `{1}` is not a `HandshakeResponse`.",
+						conn.Socket.RemoteEndPoint, so.Name);
+
+					DropClient(conn);
+				}
+
+				return;
+			}
+
 			switch (so.Name)
 			{
 				case "Command":
@@ -493,9 +511,6 @@ namespace OpenRA.Server
 						break;
 					}
 
-				case "HandshakeResponse":
-					ValidateClient(conn, so.Data);
-					break;
 				case "Chat":
 				case "TeamChat":
 				case "PauseGame":

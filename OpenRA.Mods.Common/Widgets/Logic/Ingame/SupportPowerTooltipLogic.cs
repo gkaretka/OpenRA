@@ -1,6 +1,6 @@
 #region Copyright & License Information
 /*
- * Copyright 2007-2017 The OpenRA Developers (see AUTHORS)
+ * Copyright 2007-2018 The OpenRA Developers (see AUTHORS)
  * This file is part of OpenRA, which is free software. It is made
  * available to you under the terms of the GNU General Public License
  * as published by the Free Software Foundation, either version 3 of
@@ -19,7 +19,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 	public class SupportPowerTooltipLogic : ChromeLogic
 	{
 		[ObjectCreator.UseCtor]
-		public SupportPowerTooltipLogic(Widget widget, TooltipContainerWidget tooltipContainer, Player player, SupportPowersWidget palette, World world)
+		public SupportPowerTooltipLogic(Widget widget, TooltipContainerWidget tooltipContainer, SupportPowersWidget palette, World world)
 		{
 			widget.IsVisible = () => palette.TooltipIcon != null && palette.TooltipIcon.Power.Info != null;
 			var nameLabel = widget.Get<LabelWidget>("NAME");
@@ -32,7 +32,6 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 			var descFont = Game.Renderer.Fonts[descLabel.Font];
 			var baseHeight = widget.Bounds.Height;
 			var timeOffset = timeLabel.Bounds.X;
-			var pm = player.PlayerActor.Trait<PowerManager>();
 
 			SupportPowerInstance lastPower = null;
 			Hotkey lastHotkey = Hotkey.Invalid;
@@ -41,7 +40,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 			tooltipContainer.BeforeRender = () =>
 			{
 				var icon = palette.TooltipIcon;
-				if (icon == null)
+				if (icon == null || icon.Power == null || icon.Power.Instances.Count == 0)
 					return;
 
 				var sp = icon.Power;
@@ -61,7 +60,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 				var descSize = descFont.Measure(descLabel.Text);
 
 				var remaining = WidgetUtils.FormatTime(sp.RemainingTime, world.Timestep);
-				var total = WidgetUtils.FormatTime(sp.Info.ChargeTime * 25, world.Timestep);
+				var total = WidgetUtils.FormatTime(sp.Info.ChargeInterval, world.Timestep);
 				timeLabel.Text = "{0} / {1}".F(remaining, total);
 				var timeSize = timeFont.Measure(timeLabel.Text);
 
@@ -87,7 +86,8 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 				lastRemainingSeconds = remainingSeconds;
 			};
 
-			timeLabel.GetColor = () => pm.PowerState != PowerState.Normal ? Color.Red : Color.White;
+			timeLabel.GetColor = () => palette.TooltipIcon != null && !palette.TooltipIcon.Power.Active
+				? Color.Red : Color.White;
 		}
 	}
 }

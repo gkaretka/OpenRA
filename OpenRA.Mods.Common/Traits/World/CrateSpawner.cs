@@ -1,6 +1,6 @@
 #region Copyright & License Information
 /*
- * Copyright 2007-2017 The OpenRA Developers (see AUTHORS)
+ * Copyright 2007-2018 The OpenRA Developers (see AUTHORS)
  * This file is part of OpenRA, which is free software. It is made
  * available to you under the terms of the GNU General Public License
  * as published by the Free Software Foundation, either version 3 of
@@ -21,11 +21,25 @@ namespace OpenRA.Mods.Common.Traits
 {
 	public class CrateSpawnerInfo : ITraitInfo, ILobbyOptions
 	{
+		[Translate]
+		[Desc("Descriptive label for the crates checkbox in the lobby.")]
+		public readonly string CheckboxLabel = "Crates";
+
+		[Translate]
+		[Desc("Tooltip description for the crates checkbox in the lobby.")]
+		public readonly string CheckboxDescription = "Collect crates with units to recieve random bonuses or penalties";
+
 		[Desc("Default value of the crates checkbox in the lobby.")]
-		public readonly bool Enabled = true;
+		public readonly bool CheckboxEnabled = true;
 
 		[Desc("Prevent the crates state from being changed in the lobby.")]
-		public readonly bool Locked = false;
+		public readonly bool CheckboxLocked = false;
+
+		[Desc("Whether to display the crates checkbox in the lobby.")]
+		public readonly bool CheckboxVisible = true;
+
+		[Desc("Display order for the crates checkbox in the lobby.")]
+		public readonly int CheckboxDisplayOrder = 0;
 
 		[Desc("Minimum number of crates.")]
 		public readonly int Minimum = 1;
@@ -67,7 +81,7 @@ namespace OpenRA.Mods.Common.Traits
 
 		IEnumerable<LobbyOption> ILobbyOptions.LobbyOptions(Ruleset rules)
 		{
-			yield return new LobbyBooleanOption("crates", "Crates", Enabled, Locked);
+			yield return new LobbyBooleanOption("crates", CheckboxLabel, CheckboxDescription, CheckboxVisible, CheckboxDisplayOrder, CheckboxEnabled, CheckboxLocked);
 		}
 
 		public object Create(ActorInitializer init) { return new CrateSpawner(init.Self, this); }
@@ -92,7 +106,7 @@ namespace OpenRA.Mods.Common.Traits
 		void INotifyCreated.Created(Actor self)
 		{
 			enabled = self.World.LobbyInfo.GlobalSettings
-				.OptionOrDefault("crates", info.Enabled);
+				.OptionOrDefault("crates", info.CheckboxEnabled);
 		}
 
 		void ITick.Tick(Actor self)

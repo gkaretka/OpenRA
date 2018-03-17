@@ -1,6 +1,6 @@
 #region Copyright & License Information
 /*
- * Copyright 2007-2017 The OpenRA Developers (see AUTHORS)
+ * Copyright 2007-2018 The OpenRA Developers (see AUTHORS)
  * This file is part of OpenRA, which is free software. It is made
  * available to you under the terms of the GNU General Public License
  * as published by the Free Software Foundation, either version 3 of
@@ -35,17 +35,13 @@ namespace OpenRA.Mods.Common.Lint
 	{
 		public void Run(Action<string> emitError, Action<string> emitWarning, ModData modData)
 		{
-			// Build the list of valid key names
-			// For now they are hardcoded, but this will change.
-			var namedKeys = typeof(KeySettings).GetFields()
-				.Where(x => x.Name.EndsWith("Key", StringComparison.Ordinal))
-				.Select(x => x.Name.Substring(0, x.Name.Length - 3))
-				.ToArray();
+			// Build the list of valid hotkey names
+			var namedKeys = modData.Hotkeys.Definitions.Select(d => d.Name).ToArray();
 
 			// Build the list of widget keys to validate
 			var checkWidgetFields = modData.ObjectCreator.GetTypesImplementing<Widget>()
 				.SelectMany(w => w.GetFields()
-					.Where(f => f.FieldType == typeof(NamedHotkey))
+					.Where(f => f.FieldType == typeof(HotkeyReference))
 					.Select(f => Pair.New(w.Name.Substring(0, w.Name.Length - 6), f.Name)))
 				.ToArray();
 

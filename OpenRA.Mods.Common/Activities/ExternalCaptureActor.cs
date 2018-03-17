@@ -1,6 +1,6 @@
 #region Copyright & License Information
 /*
- * Copyright 2007-2017 The OpenRA Developers (see AUTHORS)
+ * Copyright 2007-2018 The OpenRA Developers (see AUTHORS)
  * This file is part of OpenRA, which is free software. It is made
  * available to you under the terms of the GNU General Public License
  * as published by the Free Software Foundation, either version 3 of
@@ -9,6 +9,7 @@
  */
 #endregion
 
+using System.Linq;
 using OpenRA.Activities;
 using OpenRA.Mods.Common.Effects;
 using OpenRA.Mods.Common.Traits;
@@ -42,9 +43,7 @@ namespace OpenRA.Mods.Common.Activities
 				return NextActivity;
 			}
 
-			var nearest = target.Actor.OccupiesSpace.NearestCellTo(mobile.ToCell);
-
-			if ((nearest - mobile.ToCell).LengthSquared > 2)
+			if (!Util.AdjacentCells(self.World, target).Contains(mobile.ToCell))
 				return ActivityUtils.SequenceActivities(new MoveAdjacentTo(self, target), this);
 
 			if (!capturable.CaptureInProgress)
@@ -68,8 +67,6 @@ namespace OpenRA.Mods.Common.Activities
 
 						var oldOwner = target.Actor.Owner;
 
-						target.Actor.ChangeOwner(self.Owner);
-
 						foreach (var t in target.Actor.TraitsImplementing<INotifyCapture>())
 							t.OnCapture(target.Actor, self, oldOwner, self.Owner);
 
@@ -84,6 +81,8 @@ namespace OpenRA.Mods.Common.Activities
 
 						if (capturesInfo != null && capturesInfo.ConsumeActor)
 							self.Dispose();
+
+						target.Actor.ChangeOwnerSync(self.Owner);
 					});
 				}
 			}
